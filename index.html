@@ -186,13 +186,54 @@
     <div class="description">
         <div class="content" v-pre>
             
-            <p>Unsortedbin attack<br>作用：将P-&gt;bk-&gt;fd赋值为P-&gt;fd。</p>
+            <hr>
+<h1 id="堆中bin的利用"><a href="#堆中bin的利用" class="headerlink" title="堆中bin的利用"></a>堆中bin的利用</h1><h2 id="Fastbin-attack"><a href="#Fastbin-attack" class="headerlink" title="Fastbin attack"></a>Fastbin attack</h2><h2 id="tachebin-attack"><a href="#tachebin-attack" class="headerlink" title="tachebin attack"></a>tachebin attack</h2><h2 id="Unsortedbin-attack"><a href="#Unsortedbin-attack" class="headerlink" title="Unsortedbin attack"></a>Unsortedbin attack</h2><p>作用：将P-&gt;bk-&gt;fd赋值为P-&gt;fd。</p>
 <p>1、首先是unsortedbin 的分配机制，超出了fastbin和tachebin范围的free chunk就会进入unsortedbin中，并且unsortedbin是先从末尾取出chunk进行分配的，后free的chunk会进入先free的chunk的前面。unsortedbin顾名思义，未分类的chunk，所以只要用户重新申请了chunk，unsortedbin中的chunk就会被重新分类，按照其chunk的大小分别进入smallbin、largebin…中。</p>
-<p>2、unsortedbin的利用。主要就是利用其中的bk指针<br>  &#x2F;&#x2F;bck是倒数第二个chunk，victim里存的是倒数第一个chunk<br>&#x2F;* remove from unsorted list *<br>if (__glibc_unlikely (bck-&gt;fd !&#x3D; victim))<br>        malloc_printerr (“malloc(): corrupted unsorted chunks 3”);<br>unsorted_chunks (av)-&gt;bk &#x3D; bck;<br>bck-&gt;fd &#x3D; unsorted_chunks (av);<br>如上所示，里面没有涉及到victim的fd指针，只有其bk以及bck的fd。所以主要利用也是从victim的bk入手，修改其bk为一个我们已知的地址，这样bck就变成了我们的fake_chunk。victim的bk就会指向fake_chunk-0x10的位置。所以当我们重新启用victim时也就是对其malloc时。<br>则fake_chunk-0x10的fd就会指向unsortbin。<br>不过由于我们突然插入的chunk，后续的unsortbin在进行分配时可能会出现问题。</p>
-<p>测试案例<br>How2heap(使用 gcc -g 进行编译)<br>  1 &#x2F;&#x2F;gcc hollk.c -g -no-pie -o hollk<br>  2 #include &lt;stdio.h&gt;<br>  3 #include &lt;stdlib.h&gt;<br>  4<br>  5 int main() {<br>  6<br>  7   unsigned long target_var &#x3D; 0;<br>  8   fprintf(stderr,”&amp;target_var and target_var:\n”);<br>  9   fprintf(stderr, “%p: %ld\n\n”, &amp;target_var, target_var);<br> 10<br> 11   unsigned long *p &#x3D; malloc(400);<br> 12   fprintf(stderr, “The first chunk_addr at: %p\n”,p);<br> 13<br> 14   malloc(500);<br> 15<br> 16   free(p);<br> 17   fprintf(stderr, “The first chunk_bk is %p\n”,(void *)p[1]);<br> 18<br> 19   p[1] &#x3D; (unsigned long)(&amp;target_var - 2);<br> 20   fprintf(stderr, “Now,The first chunk_bk is %p\n\n”, (void *)p[1]);<br> 21<br> 22   malloc(400);<br> 23   fprintf(stderr, “target has been rewrite %p: %p\n”, &amp;target_var, (void *)target_var);<br> 24 }<br>Largebin attack<br>(总的来说，利用方法与unsortedbin差不多，并且其中的利用效果都一样，只是largebin除了可以利用bk还可以利用bk_nextsize）<br>1、规则<br>（1）、共有63个bins，每个bin的size域值各不相同，但是公差是一致的。（大于0x3F0的chunk在遍历后进入largebin，反之小于的则进入到smallbin）<br>（2）、由大到小进行存储，若大小一致则按照时间顺序存储。（小的chunk链接到largebin）</p>
+<p>2、unsortedbin的利用。主要就是利用其中的bk指针</p>
+<pre><code>//bck是倒数第二个chunk，victim里存的是倒数第一个chunk
+/* remove from unsorted list *   
+if (__glibc_unlikely (bck-&gt;fd != victim))
+        malloc_printerr (&quot;malloc(): corrupted unsorted chunks 3&quot;);
+unsorted_chunks (av)-&gt;bk = bck;
+bck-&gt;fd = unsorted_chunks (av);
+</code></pre>
+<p>如上所示，里面没有涉及到victim的fd指针，只有其bk以及bck的fd。所以主要利用也是从victim的bk入手，修改其bk为一个我们已知的地址，这样bck就变成了我们的fake_chunk。victim的bk就会指向fake_chunk-0x10的位置。所以当我们重新启用victim时也就是对其malloc时。<br>则fake_chunk-0x10的fd就会指向unsortbin。<br>不过由于我们突然插入的chunk，后续的unsortbin在进行分配时可能会出现问题。</p>
+<p>测试案例</p>
+<pre><code>How2heap(使用 gcc -g 进行编译)
+1 //gcc hollk.c -g -no-pie -o hollk
+2 #include &lt;stdio.h&gt;
+3 #include &lt;stdlib.h&gt;
+4
+5 int main() &#123;
+6
+7   unsigned long target_var = 0;
+8   fprintf(stderr,&quot;&amp;target_var and target_var:\n&quot;);
+9   fprintf(stderr, &quot;%p: %ld\n\n&quot;, &amp;target_var, target_var);
+10
+11   unsigned long *p = malloc(400);
+12   fprintf(stderr, &quot;The first chunk_addr at: %p\n&quot;,p);
+13
+14   malloc(500);
+15
+16   free(p);
+17   fprintf(stderr, &quot;The first chunk_bk is %p\n&quot;,(void *)p[1]);
+18
+19   p[1] = (unsigned long)(&amp;target_var - 2);
+20   fprintf(stderr, &quot;Now,The first chunk_bk is %p\n\n&quot;, (void *)p[1]);
+21
+22   malloc(400);
+23   fprintf(stderr, &quot;target has been rewrite %p: %p\n&quot;, &amp;target_var, (void *)target_var);
+24 &#125;
+</code></pre>
+<h2 id="Largebin-attack"><a href="#Largebin-attack" class="headerlink" title="Largebin attack"></a>Largebin attack</h2><p>(总的来说，利用方法与unsortedbin差不多，并且其中的利用效果都一样，只是largebin除了可以利用bk还可以利用bk_nextsize）</p>
+<p>1、规则<br>（1）、共有63个bins，每个bin的size域值各不相同，但是公差是一致的。（大于0x3F0的chunk在遍历后进入largebin，反之小于的则进入到smallbin）<br>（2）、由大到小进行存储，若大小一致则按照时间顺序存储。（小的chunk链接到largebin）</p>
 <p>2、新增fd_nextsize与bk_nextsize这两指针。fd_nextsize的作用是记录前面第一个与此chunk的size不同的chunk的地址，而bk_nextsize则是记录后面第一个与此chunk的size不同的chunk的地址。（只有第一个chunk的fd&#x2F;bk_nextsize进行记录，其他的默认为0）</p>
-<p>3、attack<br>已知largebin对chunk进行操作有三种情况<br>（进行伪造工作的chunk是chunk_B又名P2，chunk_A是P3其size大于P2）<br>（1）、chunk_A大于chunk_B<br>（2）、chunk_A小于chunk_B<br>（3）、chunk_A等于chunk_B<br>又得知，largbin是按chunk由大到小进行排列的，小的那一方chunk靠近largebin<br><img src="/images/u1.png" alt="图片"><br>又又得知，对chunk进行操作的三种情况</p>
-<p>（其中chunk_A是P3，chunk_B是P2，p2-&gt;bk是value1-0x10，p2-&gt;bk_nextsize是value2-0x20）<br>（1）、重点<br>（2）、<br><img src="/images/u2.png" alt="图片"><br>（3）、<br><img src="/images/u3.png" alt="图片"></p>
+<p>3、attack<br>已知largebin对chunk进行操作有三种情况<br>（进行伪造工作的chunk是chunk_B又名P2，chunk_A是P3其size大于P2）</p>
+<p>（1）、chunk_A大于chunk_B</p>
+<p>（2）、chunk_A小于chunk_B</p>
+<p>（3）、chunk_A等于chunk_B</p>
+<p>又得知，largbin是按chunk由大到小进行排列的，小的那一方chunk靠近largebin<br>(1)、<br><img src="/images/u1.png" alt="图片"><br>又又得知，对chunk进行操作的三种情况</p>
+<p>（其中chunk_A是P3，chunk_B是P2，p2-&gt;bk是value1-0x10，p2-&gt;bk_nextsize是value2-0x20）<br>（2）、<br><img src="/images/u2.png" alt="图片"><br>（3）、<br><img src="/images/u3.png" alt="图片"></p>
 <p>另外需要注意，伪造的堆块fd_nextsize需要设置为0.不然无法通过以下unlink检查。<br>    size &#x3D; chunksize (victim);</p>
 <pre><code>/*  We know the first chunk in this bin is big enough to use. */
 assert ((unsigned long) (size) &gt;= (unsigned long) (nb));
@@ -244,6 +285,7 @@ unlink_chunk (av, victim);
 39     return 0;
 40 &#125;
 </code></pre>
+<hr>
 
             
         </div>
@@ -434,12 +476,12 @@ __imbue = 0x7ffff7c96f90 &lt;_IO_default_imbue&gt;
         
         <span class="tag">
             
-            <a href="/tags/pwn/" style="color: #00a596">pwn</a>
+            <a href="/tags/pwn/" style="color: #ffa2c4">pwn</a>
         </span>
         
         <span class="tag">
             
-            <a href="/tags/IO/" style="color: #ff7d73">IO</a>
+            <a href="/tags/IO/" style="color: #00bcd4">IO</a>
         </span>
         
         <span class="tag">
