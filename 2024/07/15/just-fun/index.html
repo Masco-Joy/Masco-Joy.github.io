@@ -42,6 +42,9 @@
 
 
 
+<script src="https://s4.zstatic.net/ajax/libs/gitalk/1.8.0/gitalk.min.js"></script>
+<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/gitalk/1.8.0/gitalk.min.css" />
+
 
 
 
@@ -51,6 +54,7 @@
 <meta name="generator" content="Hexo 7.3.0"></head>
 <body>
   
+
   <canvas
     id="fireworks"
     style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 32767"
@@ -163,10 +167,10 @@
     
     
     
-    
     <div id="comment">
-        <div id="giscus-container" class="giscus"></div>
+        <div id="gitalk-container"></div>
     </div>
+    
     
     
     
@@ -203,23 +207,20 @@
     <script src="/js/main.js"></script>
     
     
-<script
-    src="https://giscus.app/client.js"
-    data-repo=""
-    data-repo-id=""
-    data-category=""
-    data-category-id=""
-    data-mapping="pathname"
-    data-strict="0"
-    data-reactions-enabled="1"
-    data-emit-metadata="0"
-    data-input-position="bottom"
-    data-theme="preferred_color_scheme"
-    data-lang=""
-    crossorigin
-    async
-></script>
 
+<script>
+    const gitalk = new Gitalk({
+        clientID: "",
+        clientSecret: "",
+        repo: "",
+        owner: "",
+        admin: "".split(","),
+        language: "",
+        id: location.pathname,
+        
+    })
+    gitalk.render("gitalk-container");
+</script>
 
 
 
