@@ -188,13 +188,149 @@
             
             <hr>
 <h1 id="IO结构体"><a href="#IO结构体" class="headerlink" title="IO结构体"></a><strong>IO结构体</strong></h1><p>关于IO_file_jumps中函数的具体作用可以参考以下两个博客<br><a target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">国资</a>                                                              和<a target="_blank" rel="noopener" href="https://ray-cp.github.io/">ray-cp</a>   或者星盟的也可以</p>
-<h2 id="IO-FILE-plus"><a href="#IO-FILE-plus" class="headerlink" title="IO_FILE_plus"></a>IO_FILE_plus</h2><figure class="highlight sqf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><code class="hljs sqf">struct <span class="hljs-variable">_IO_FILE_plus</span><br>&#123;<br><span class="hljs-variable">_IO_FILE</span> file;<br>const struct <span class="hljs-variable">_IO_jump_t</span> *vtable;<br>&#125;;<br>IO_FILE(结构体）<br>- struct <span class="hljs-variable">_IO_FILE</span> &#123;<br>  int <span class="hljs-variable">_flags</span>;       <span class="hljs-comment">/* High-order word is _IO_MAGIC; rest is flags. */</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> _IO_file_flags _flags</span><br><br>  char_IO_read_ptr;   <span class="hljs-comment">/* Current read pointer */</span> <br>  char_IO_read_end;   <span class="hljs-comment">/* End of get area. */</span><br>  char_IO_read_base;  <span class="hljs-comment">/* Start of putback+get area. */</span><br>- <span class="hljs-comment">//read ptr是现在read指针指向的位置，end则是read读取结束的位置，base则是开始的位置</span><br>- <br><br>  char_IO_write_base; <span class="hljs-comment">/* Start of put area. */</span><br>  char_IO_write_ptr;  <span class="hljs-comment">/* Current put pointer. */</span><br>  char_IO_write_end;  <span class="hljs-comment">/* End of put area. */</span><br><span class="hljs-comment">//write的指针的作用是与read指针的作用是一致的</span><br><br>  char_IO_buf_base;   <span class="hljs-comment">/* Start of reserve area. */</span><br>  char_IO_buf_end;    <span class="hljs-comment">/* End of reserve area. */</span><br><span class="hljs-comment">//缓冲区的位置</span><br><br><br>  <span class="hljs-comment">/* The following fields are used to support backing up and undo. */</span><br>  char *<span class="hljs-variable">_IO_save_base</span>; <span class="hljs-comment">/* Pointer to start of non-current get area. */</span><br>  char *<span class="hljs-variable">_IO_backup_base</span>;  <span class="hljs-comment">/* Pointer to first valid character of backup area */</span><br>  char *<span class="hljs-variable">_IO_save_end</span>; <span class="hljs-comment">/* Pointer to end of non-current get area. */</span><br><br>  struct <span class="hljs-variable">_IO_marker</span> *<span class="hljs-variable">_markers</span>;<br><br>  struct <span class="hljs-variable">_IO_FILE</span> *<span class="hljs-variable">_chain</span>;<br><span class="hljs-comment">//chain依次链接的是stdin、stdout、stderr</span><br><br>  int <span class="hljs-variable">_fileno</span>;<br><span class="hljs-comment">//一般指的是目前是在哪个chain里，0是in，1是out，2是err</span><br><br><span class="hljs-meta">#<span class="hljs-keyword">if</span> 0</span><br>  int <span class="hljs-variable">_blksize</span>;<br><span class="hljs-meta">#<span class="hljs-keyword">else</span></span><br>  int <span class="hljs-variable">_flags2</span>;<br><span class="hljs-meta">#<span class="hljs-keyword">endif</span></span><br>  <span class="hljs-variable">_IO_off_t</span> <span class="hljs-variable">_old_offset</span>; <span class="hljs-comment">/* This used to be _offset but it&#x27;s too small.  */</span><br><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> __HAVE_COLUMN <span class="hljs-comment">/* temporary */</span></span><br>  <span class="hljs-comment">/* 1+column number of pbase(); 0 is unknown. */</span><br>  unsigned short <span class="hljs-variable">_cur_column</span>;<br>  signed char <span class="hljs-variable">_vtable_offset</span>;<br>  char <span class="hljs-variable">_shortbuf</span>[<span class="hljs-number">1</span>];<br><br>  <span class="hljs-comment">/*  char* _save_gptr;  char* _save_egptr; */</span><br><br>  <span class="hljs-variable">_IO_lock_t</span> *<span class="hljs-variable">_lock</span>;<br><span class="hljs-meta">#<span class="hljs-keyword">ifdef</span> _IO_USE_OLD_IO_FILE</span><br>&#125;;<br></code></pre></td></tr></table></figure>
-<h2 id="IO-jump-t"><a href="#IO-jump-t" class="headerlink" title="_IO_jump_t"></a>_IO_jump_t</h2> <figure class="highlight sqf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><code class="hljs sqf">struct <span class="hljs-variable">_IO_jump_t</span><br>&#123;<br>    JUMP_FIELD(size_t, <span class="hljs-variable">__dummy</span>);<br>    JUMP_FIELD(size_t, <span class="hljs-variable">__dummy2</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_finish_t</span>, <span class="hljs-variable">__finish</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_overflow_t</span>, <span class="hljs-variable">__overflow</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_underflow_t</span>, <span class="hljs-variable">__underflow</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_underflow_t</span>, <span class="hljs-variable">__uflow</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_pbackfail_t</span>, <span class="hljs-variable">__pbackfail</span>);<br>    <span class="hljs-comment">/* showmany */</span><br>    JUMP_FIELD(<span class="hljs-variable">_IO_xsputn_t</span>, <span class="hljs-variable">__xsputn</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_xsgetn_t</span>, <span class="hljs-variable">__xsgetn</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_seekoff_t</span>, <span class="hljs-variable">__seekoff</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_seekpos_t</span>, <span class="hljs-variable">__seekpos</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_setbuf_t</span>, <span class="hljs-variable">__setbuf</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_sync_t</span>, <span class="hljs-variable">__sync</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_doallocate_t</span>, <span class="hljs-variable">__doallocate</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_read_t</span>, <span class="hljs-variable">__read</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_write_t</span>, <span class="hljs-variable">__write</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_seek_t</span>, <span class="hljs-variable">__seek</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_close_t</span>, <span class="hljs-variable">__close</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_stat_t</span>, <span class="hljs-variable">__stat</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_showmanyc_t</span>, <span class="hljs-variable">__showmanyc</span>);<br>    JUMP_FIELD(<span class="hljs-variable">_IO_imbue_t</span>, <span class="hljs-variable">__imbue</span>);<br><span class="hljs-meta">#<span class="hljs-keyword">if</span> 0</span><br>    get_column;<br>    set_column;<br><span class="hljs-meta">#<span class="hljs-keyword">endif</span></span><br>&#125;;<br></code></pre></td></tr></table></figure>
+<h2 id="IO-FILE-plus"><a href="#IO-FILE-plus" class="headerlink" title="IO_FILE_plus"></a>IO_FILE_plus</h2><pre><code>    struct _IO_FILE_plus
+    &#123;
+    _IO_FILE file;
+    const struct _IO_jump_t *vtable;
+    &#125;;
+    IO_FILE(结构体）
+    - struct _IO_FILE &#123;
+    int _flags;       /* High-order word is _IO_MAGIC; rest is flags. */
+    #define _IO_file_flags _flags
 
-<h2 id="IO-str-jumps"><a href="#IO-str-jumps" class="headerlink" title="IO_str_jumps"></a>IO_str_jumps</h2><figure class="highlight sqf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs sqf"><span class="hljs-number">1</span>. <span class="hljs-comment">// libio/strops.c</span><br><span class="hljs-number">2</span>. <br><span class="hljs-number">3</span>. const struct <span class="hljs-variable">_IO_jump_t</span> <span class="hljs-variable">_IO_str_jumps</span> libio_vtable =<br><span class="hljs-number">4</span>. &#123;<br><span class="hljs-number">5</span>.   JUMP_INIT_DUMMY,<br><span class="hljs-number">6</span>.   JUMP_INIT(finish, <span class="hljs-variable">_IO_str_finish</span>),<br><span class="hljs-number">7</span>.   JUMP_INIT(overflow, <span class="hljs-variable">_IO_str_overflow</span>),<br><span class="hljs-number">8</span>.   JUMP_INIT(underflow, <span class="hljs-variable">_IO_str_underflow</span>),<br><span class="hljs-number">9</span>.   JUMP_INIT(uflow, <span class="hljs-variable">_IO_default_uflow</span>),<br><span class="hljs-number">10</span>.   JUMP_INIT(pbackfail, <span class="hljs-variable">_IO_str_pbackfail</span>),<br><span class="hljs-number">11</span>.   JUMP_INIT(xsputn, <span class="hljs-variable">_IO_default_xsputn</span>),<br><span class="hljs-number">12</span>.   JUMP_INIT(xsgetn, <span class="hljs-variable">_IO_default_xsgetn</span>),<br><span class="hljs-number">13</span>.   JUMP_INIT(seekoff, <span class="hljs-variable">_IO_str_seekoff</span>),<br><span class="hljs-number">14</span>.   JUMP_INIT(seekpos, <span class="hljs-variable">_IO_default_seekpos</span>),<br><span class="hljs-number">15</span>.   JUMP_INIT(setbuf, <span class="hljs-variable">_IO_default_setbuf</span>),<br><span class="hljs-number">16</span>.   JUMP_INIT(sync, <span class="hljs-variable">_IO_default_sync</span>),<br><span class="hljs-number">17</span>.   JUMP_INIT(doallocate, <span class="hljs-variable">_IO_default_doallocate</span>),<br><span class="hljs-number">18</span>.   JUMP_INIT(read, <span class="hljs-variable">_IO_default_read</span>),<br><span class="hljs-number">19</span>.   JUMP_INIT(write, <span class="hljs-variable">_IO_default_write</span>),<br><span class="hljs-number">20</span>.   JUMP_INIT(seek, <span class="hljs-variable">_IO_default_seek</span>),<br><span class="hljs-number">21</span>.   JUMP_INIT(close, <span class="hljs-variable">_IO_default_close</span>),<br><span class="hljs-number">22</span>.   JUMP_INIT(stat, <span class="hljs-variable">_IO_default_stat</span>),<br><span class="hljs-number">23</span>.   JUMP_INIT(showmanyc, <span class="hljs-variable">_IO_default_showmanyc</span>),<br><span class="hljs-number">24</span>.   JUMP_INIT(imbue, <span class="hljs-variable">_IO_default_imbue</span>)<br><span class="hljs-number">25</span>. &#125;;<br></code></pre></td></tr></table></figure>
-<h2 id="IO-file-jumps"><a href="#IO-file-jumps" class="headerlink" title="IO_file_jumps"></a>IO_file_jumps</h2><figure class="highlight sqf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs sqf">&#123;<br>  <span class="hljs-variable">__dummy</span> = <span class="hljs-number">0</span>,<br>  <span class="hljs-variable">__dummy2</span> = <span class="hljs-number">0</span>,<br>  <span class="hljs-variable">__finish</span> = <span class="hljs-number">0</span>x7ffff7c91a30 &lt;<span class="hljs-variable">_IO_new_file_finish</span>&gt;,<br>  <span class="hljs-variable">__overflow</span> = <span class="hljs-number">0</span>x7ffff7c92de0 &lt;<span class="hljs-variable">_IO_new_file_overflow</span>&gt;,<br>  <span class="hljs-variable">__underflow</span> = <span class="hljs-number">0</span>x7ffff7c92630 &lt;<span class="hljs-variable">_IO_new_file_underflow</span>&gt;,<br>  <span class="hljs-variable">__uflow</span> = <span class="hljs-number">0</span>x7ffff7c95590 &lt;<span class="hljs-variable">__GI__IO_default_uflow</span>&gt;,<br>  <span class="hljs-variable">__pbackfail</span> = <span class="hljs-number">0</span>x7ffff7c96dd0 &lt;<span class="hljs-variable">__GI__IO_default_pbackfail</span>&gt;,<br>  <span class="hljs-variable">__xsputn</span> = <span class="hljs-number">0</span>x7ffff7c939d0 &lt;<span class="hljs-variable">_IO_new_file_xsputn</span>&gt;,<br>  <span class="hljs-variable">__xsgetn</span> = <span class="hljs-number">0</span>x7ffff7c93d10 &lt;<span class="hljs-variable">__GI__IO_file_xsgetn</span>&gt;,<br>  <span class="hljs-variable">__seekoff</span> = <span class="hljs-number">0</span>x7ffff7c93150 &lt;<span class="hljs-variable">_IO_new_file_seekoff</span>&gt;,<br>  <span class="hljs-variable">__seekpos</span> = <span class="hljs-number">0</span>x7ffff7c95cb0 &lt;<span class="hljs-variable">_IO_default_seekpos</span>&gt;,<br>  <span class="hljs-variable">__setbuf</span> = <span class="hljs-number">0</span>x7ffff7c923f0 &lt;<span class="hljs-variable">_IO_new_file_setbuf</span>&gt;,<br>  <span class="hljs-variable">__sync</span> = <span class="hljs-number">0</span>x7ffff7c93000 &lt;<span class="hljs-variable">_IO_new_file_sync</span>&gt;,<br>  <span class="hljs-variable">__doallocate</span> = <span class="hljs-number">0</span>x7ffff7c85110 &lt;<span class="hljs-variable">__GI__IO_file_doallocate</span>&gt;,<br>  <span class="hljs-variable">__read</span> = <span class="hljs-number">0</span>x7ffff7c938a0 &lt;<span class="hljs-variable">__GI__IO_file_read</span>&gt;,<br>  <span class="hljs-variable">__write</span> = <span class="hljs-number">0</span>x7ffff7c93930 &lt;<span class="hljs-variable">_IO_new_file_write</span>&gt;,<br>  <span class="hljs-variable">__seek</span> = <span class="hljs-number">0</span>x7ffff7c938c0 &lt;<span class="hljs-variable">__GI__IO_file_seek</span>&gt;,<br>  <span class="hljs-variable">__close</span> = <span class="hljs-number">0</span>x7ffff7c93920 &lt;<span class="hljs-variable">__GI__IO_file_close</span>&gt;,<br>  <span class="hljs-variable">__stat</span> = <span class="hljs-number">0</span>x7ffff7c938d0 &lt;<span class="hljs-variable">__GI__IO_file_stat</span>&gt;,<br>  <span class="hljs-variable">__showmanyc</span> = <span class="hljs-number">0</span>x7ffff7c96f80 &lt;<span class="hljs-variable">_IO_default_showmanyc</span>&gt;,<br>  <span class="hljs-variable">__imbue</span> = <span class="hljs-number">0</span>x7ffff7c96f90 &lt;<span class="hljs-variable">_IO_default_imbue</span>&gt;<br>&#125;<br></code></pre></td></tr></table></figure>
+char_IO_read_ptr;   /* Current read pointer */ 
+char_IO_read_end;   /* End of get area. */
+char_IO_read_base;  /* Start of putback+get area. */
+- //read ptr是现在read指针指向的位置，end则是read读取结束的位置，base则是开始的位置
+- 
+
+char_IO_write_base; /* Start of put area. */
+char_IO_write_ptr;  /* Current put pointer. */
+char_IO_write_end;  /* End of put area. */
+//write的指针的作用是与read指针的作用是一致的
+
+char_IO_buf_base;   /* Start of reserve area. */
+char_IO_buf_end;    /* End of reserve area. */
+//缓冲区的位置
 
 
+/* The following fields are used to support backing up and undo. */
+char *_IO_save_base; /* Pointer to start of non-current get area. */
+char *_IO_backup_base;  /* Pointer to first valid character of backup area */
+char *_IO_save_end; /* Pointer to end of non-current get area. */
+
+struct _IO_marker *_markers;
+
+struct _IO_FILE *_chain;
+//chain依次链接的是stdin、stdout、stderr
+
+int _fileno;
+//一般指的是目前是在哪个chain里，0是in，1是out，2是err
+
+#if 0
+int _blksize;
+#else
+int _flags2;
+#endif
+_IO_off_t _old_offset; /* This used to be _offset but it&#39;s too small.  */
+
+#define __HAVE_COLUMN /* temporary */
+/* 1+column number of pbase(); 0 is unknown. */
+unsigned short _cur_column;
+signed char _vtable_offset;
+char _shortbuf[1];
+
+/*  char* _save_gptr;  char* _save_egptr; */
+
+_IO_lock_t *_lock;
+#ifdef _IO_USE_OLD_IO_FILE
+&#125;;
+</code></pre>
+<h2 id="IO-jump-t"><a href="#IO-jump-t" class="headerlink" title="_IO_jump_t"></a>_IO_jump_t</h2><pre><code>struct _IO_jump_t
+&#123;
+    JUMP_FIELD(size_t, __dummy);
+    JUMP_FIELD(size_t, __dummy2);
+    JUMP_FIELD(_IO_finish_t, __finish);
+    JUMP_FIELD(_IO_overflow_t, __overflow);
+    JUMP_FIELD(_IO_underflow_t, __underflow);
+    JUMP_FIELD(_IO_underflow_t, __uflow);
+    JUMP_FIELD(_IO_pbackfail_t, __pbackfail);
+    /* showmany */
+    JUMP_FIELD(_IO_xsputn_t, __xsputn);
+    JUMP_FIELD(_IO_xsgetn_t, __xsgetn);
+    JUMP_FIELD(_IO_seekoff_t, __seekoff);
+    JUMP_FIELD(_IO_seekpos_t, __seekpos);
+    JUMP_FIELD(_IO_setbuf_t, __setbuf);
+    JUMP_FIELD(_IO_sync_t, __sync);
+    JUMP_FIELD(_IO_doallocate_t, __doallocate);
+    JUMP_FIELD(_IO_read_t, __read);
+    JUMP_FIELD(_IO_write_t, __write);
+    JUMP_FIELD(_IO_seek_t, __seek);
+    JUMP_FIELD(_IO_close_t, __close);
+    JUMP_FIELD(_IO_stat_t, __stat);
+    JUMP_FIELD(_IO_showmanyc_t, __showmanyc);
+    JUMP_FIELD(_IO_imbue_t, __imbue);
+#if 0
+    get_column;
+    set_column;
+#endif
+&#125;;
+</code></pre>
+<h2 id="IO-str-jumps"><a href="#IO-str-jumps" class="headerlink" title="IO_str_jumps"></a>IO_str_jumps</h2><pre><code>1. // libio/strops.c
+2. 
+3. const struct _IO_jump_t _IO_str_jumps libio_vtable =
+4. &#123;
+5.   JUMP_INIT_DUMMY,
+6.   JUMP_INIT(finish, _IO_str_finish),
+7.   JUMP_INIT(overflow, _IO_str_overflow),
+8.   JUMP_INIT(underflow, _IO_str_underflow),
+9.   JUMP_INIT(uflow, _IO_default_uflow),
+10.   JUMP_INIT(pbackfail, _IO_str_pbackfail),
+11.   JUMP_INIT(xsputn, _IO_default_xsputn),
+12.   JUMP_INIT(xsgetn, _IO_default_xsgetn),
+13.   JUMP_INIT(seekoff, _IO_str_seekoff),
+14.   JUMP_INIT(seekpos, _IO_default_seekpos),
+15.   JUMP_INIT(setbuf, _IO_default_setbuf),
+16.   JUMP_INIT(sync, _IO_default_sync),
+17.   JUMP_INIT(doallocate, _IO_default_doallocate),
+18.   JUMP_INIT(read, _IO_default_read),
+19.   JUMP_INIT(write, _IO_default_write),
+20.   JUMP_INIT(seek, _IO_default_seek),
+21.   JUMP_INIT(close, _IO_default_close),
+22.   JUMP_INIT(stat, _IO_default_stat),
+23.   JUMP_INIT(showmanyc, _IO_default_showmanyc),
+24.   JUMP_INIT(imbue, _IO_default_imbue)
+25. &#125;;
+
+                                                                                                                                                                        
+                                                                                
+                                                                                         
+                                                                 
+</code></pre>
+<h2 id="IO-file-jumps"><a href="#IO-file-jumps" class="headerlink" title="IO_file_jumps"></a>IO_file_jumps</h2><pre><code>&#123;
+__dummy = 0,
+__dummy2 = 0,
+__finish = 0x7ffff7c91a30 &lt;_IO_new_file_finish&gt;,
+__overflow = 0x7ffff7c92de0 &lt;_IO_new_file_overflow&gt;,
+__underflow = 0x7ffff7c92630 &lt;_IO_new_file_underflow&gt;,
+__uflow = 0x7ffff7c95590 &lt;__GI__IO_default_uflow&gt;,
+__pbackfail = 0x7ffff7c96dd0 &lt;__GI__IO_default_pbackfail&gt;,
+__xsputn = 0x7ffff7c939d0 &lt;_IO_new_file_xsputn&gt;,
+__xsgetn = 0x7ffff7c93d10 &lt;__GI__IO_file_xsgetn&gt;,
+__seekoff = 0x7ffff7c93150 &lt;_IO_new_file_seekoff&gt;,
+__seekpos = 0x7ffff7c95cb0 &lt;_IO_default_seekpos&gt;,
+__setbuf = 0x7ffff7c923f0 &lt;_IO_new_file_setbuf&gt;,
+__sync = 0x7ffff7c93000 &lt;_IO_new_file_sync&gt;,
+__doallocate = 0x7ffff7c85110 &lt;__GI__IO_file_doallocate&gt;,
+__read = 0x7ffff7c938a0 &lt;__GI__IO_file_read&gt;,
+__write = 0x7ffff7c93930 &lt;_IO_new_file_write&gt;,
+__seek = 0x7ffff7c938c0 &lt;__GI__IO_file_seek&gt;,
+__close = 0x7ffff7c93920 &lt;__GI__IO_file_close&gt;,
+__stat = 0x7ffff7c938d0 &lt;__GI__IO_file_stat&gt;,
+__showmanyc = 0x7ffff7c96f80 &lt;_IO_default_showmanyc&gt;,
+__imbue = 0x7ffff7c96f90 &lt;_IO_default_imbue&gt;
+&#125;
+</code></pre>
 <hr>
 
             
@@ -210,17 +346,17 @@
         
         <span class="tag">
             
-            <a href="/tags/pwn/" style="color: #ffa2c4">pwn</a>
+            <a href="/tags/pwn/" style="color: #03a9f4">pwn</a>
         </span>
         
         <span class="tag">
             
-            <a href="/tags/IO/" style="color: #00bcd4">IO</a>
+            <a href="/tags/IO/" style="color: #00a596">IO</a>
         </span>
         
         <span class="tag">
             
-            <a href="/tags/ctf/" style="color: #ffa2c4">ctf</a>
+            <a href="/tags/ctf/" style="color: #ff7d73">ctf</a>
         </span>
         
     </div>
