@@ -162,7 +162,8 @@
     
     <div class="content" v-pre>
         <hr>
-<h1 id="堆中bin的利用"><a href="#堆中bin的利用" class="headerlink" title="堆中bin的利用"></a>堆中bin的利用</h1><h2 id="Fastbin-attack"><a href="#Fastbin-attack" class="headerlink" title="Fastbin attack"></a>Fastbin attack</h2><h2 id="tachebin-attack"><a href="#tachebin-attack" class="headerlink" title="tachebin attack"></a>tachebin attack</h2><h2 id="Unsortedbin-attack"><a href="#Unsortedbin-attack" class="headerlink" title="Unsortedbin attack"></a>Unsortedbin attack</h2><p>作用：将P-&gt;bk-&gt;fd赋值为P-&gt;fd。</p>
+<h1 id="堆中bin的利用"><a href="#堆中bin的利用" class="headerlink" title="堆中bin的利用"></a>堆中bin的利用</h1><span id="more"></span>
+<h2 id="Fastbin-attack"><a href="#Fastbin-attack" class="headerlink" title="Fastbin attack"></a>Fastbin attack</h2><h2 id="tachebin-attack"><a href="#tachebin-attack" class="headerlink" title="tachebin attack"></a>tachebin attack</h2><h2 id="Unsortedbin-attack"><a href="#Unsortedbin-attack" class="headerlink" title="Unsortedbin attack"></a>Unsortedbin attack</h2><p>作用：将P-&gt;bk-&gt;fd赋值为P-&gt;fd。</p>
 <p>1、首先是unsortedbin 的分配机制，超出了fastbin和tachebin范围的free chunk就会进入unsortedbin中，并且unsortedbin是先从末尾取出chunk进行分配的，后free的chunk会进入先free的chunk的前面。unsortedbin顾名思义，未分类的chunk，所以只要用户重新申请了chunk，unsortedbin中的chunk就会被重新分类，按照其chunk的大小分别进入smallbin、largebin…中。</p>
 <p>2、unsortedbin的利用。主要就是利用其中的bk指针</p>
 <pre><code>//bck是倒数第二个chunk，victim里存的是倒数第一个chunk
