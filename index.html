@@ -218,152 +218,7 @@
         <div class="content" v-pre>
             
             <hr>
-<h1 id="IO结构体"><a href="#IO结构体" class="headerlink" title="IO结构体"></a><strong>IO结构体</strong></h1><p>关于IO_file_jumps中函数的具体作用可以参考以下两个博客<br><a target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">国资</a>                                                              和<a target="_blank" rel="noopener" href="https://ray-cp.github.io/">ray-cp</a>   或者星盟的也可以</p>
-<h2 id="IO-FILE-plus"><a href="#IO-FILE-plus" class="headerlink" title="IO_FILE_plus"></a>IO_FILE_plus</h2><pre><code>    struct _IO_FILE_plus
-    &#123;
-    _IO_FILE file;
-    const struct _IO_jump_t *vtable;
-    &#125;;
-    IO_FILE(结构体）
-    - struct _IO_FILE &#123;
-    int _flags;       /* High-order word is _IO_MAGIC; rest is flags. */
-    #define _IO_file_flags _flags
-
-char_IO_read_ptr;   /* Current read pointer */ 
-char_IO_read_end;   /* End of get area. */
-char_IO_read_base;  /* Start of putback+get area. */
-- //read ptr是现在read指针指向的位置，end则是read读取结束的位置，base则是开始的位置
-- 
-
-char_IO_write_base; /* Start of put area. */
-char_IO_write_ptr;  /* Current put pointer. */
-char_IO_write_end;  /* End of put area. */
-//write的指针的作用是与read指针的作用是一致的
-
-char_IO_buf_base;   /* Start of reserve area. */
-char_IO_buf_end;    /* End of reserve area. */
-//缓冲区的位置
-
-
-/* The following fields are used to support backing up and undo. */
-char *_IO_save_base; /* Pointer to start of non-current get area. */
-char *_IO_backup_base;  /* Pointer to first valid character of backup area */
-char *_IO_save_end; /* Pointer to end of non-current get area. */
-
-struct _IO_marker *_markers;
-
-struct _IO_FILE *_chain;
-//chain依次链接的是stdin、stdout、stderr
-
-int _fileno;
-//一般指的是目前是在哪个chain里，0是in，1是out，2是err
-
-#if 0
-int _blksize;
-#else
-int _flags2;
-#endif
-_IO_off_t _old_offset; /* This used to be _offset but it&#39;s too small.  */
-
-#define __HAVE_COLUMN /* temporary */
-/* 1+column number of pbase(); 0 is unknown. */
-unsigned short _cur_column;
-signed char _vtable_offset;
-char _shortbuf[1];
-
-/*  char* _save_gptr;  char* _save_egptr; */
-
-_IO_lock_t *_lock;
-#ifdef _IO_USE_OLD_IO_FILE
-&#125;;
-</code></pre>
-<h2 id="IO-jump-t"><a href="#IO-jump-t" class="headerlink" title="_IO_jump_t"></a>_IO_jump_t</h2><pre><code>struct _IO_jump_t
-&#123;
-    JUMP_FIELD(size_t, __dummy);
-    JUMP_FIELD(size_t, __dummy2);
-    JUMP_FIELD(_IO_finish_t, __finish);
-    JUMP_FIELD(_IO_overflow_t, __overflow);
-    JUMP_FIELD(_IO_underflow_t, __underflow);
-    JUMP_FIELD(_IO_underflow_t, __uflow);
-    JUMP_FIELD(_IO_pbackfail_t, __pbackfail);
-    /* showmany */
-    JUMP_FIELD(_IO_xsputn_t, __xsputn);
-    JUMP_FIELD(_IO_xsgetn_t, __xsgetn);
-    JUMP_FIELD(_IO_seekoff_t, __seekoff);
-    JUMP_FIELD(_IO_seekpos_t, __seekpos);
-    JUMP_FIELD(_IO_setbuf_t, __setbuf);
-    JUMP_FIELD(_IO_sync_t, __sync);
-    JUMP_FIELD(_IO_doallocate_t, __doallocate);
-    JUMP_FIELD(_IO_read_t, __read);
-    JUMP_FIELD(_IO_write_t, __write);
-    JUMP_FIELD(_IO_seek_t, __seek);
-    JUMP_FIELD(_IO_close_t, __close);
-    JUMP_FIELD(_IO_stat_t, __stat);
-    JUMP_FIELD(_IO_showmanyc_t, __showmanyc);
-    JUMP_FIELD(_IO_imbue_t, __imbue);
-#if 0
-    get_column;
-    set_column;
-#endif
-&#125;;
-</code></pre>
-<h2 id="IO-str-jumps"><a href="#IO-str-jumps" class="headerlink" title="IO_str_jumps"></a>IO_str_jumps</h2><pre><code>1. // libio/strops.c
-2. 
-3. const struct _IO_jump_t _IO_str_jumps libio_vtable =
-4. &#123;
-5.   JUMP_INIT_DUMMY,
-6.   JUMP_INIT(finish, _IO_str_finish),
-7.   JUMP_INIT(overflow, _IO_str_overflow),
-8.   JUMP_INIT(underflow, _IO_str_underflow),
-9.   JUMP_INIT(uflow, _IO_default_uflow),
-10.   JUMP_INIT(pbackfail, _IO_str_pbackfail),
-11.   JUMP_INIT(xsputn, _IO_default_xsputn),
-12.   JUMP_INIT(xsgetn, _IO_default_xsgetn),
-13.   JUMP_INIT(seekoff, _IO_str_seekoff),
-14.   JUMP_INIT(seekpos, _IO_default_seekpos),
-15.   JUMP_INIT(setbuf, _IO_default_setbuf),
-16.   JUMP_INIT(sync, _IO_default_sync),
-17.   JUMP_INIT(doallocate, _IO_default_doallocate),
-18.   JUMP_INIT(read, _IO_default_read),
-19.   JUMP_INIT(write, _IO_default_write),
-20.   JUMP_INIT(seek, _IO_default_seek),
-21.   JUMP_INIT(close, _IO_default_close),
-22.   JUMP_INIT(stat, _IO_default_stat),
-23.   JUMP_INIT(showmanyc, _IO_default_showmanyc),
-24.   JUMP_INIT(imbue, _IO_default_imbue)
-25. &#125;;
-
-                                                                                                                                                                        
-                                                                                
-                                                                                         
-                                                                 
-</code></pre>
-<h2 id="IO-file-jumps"><a href="#IO-file-jumps" class="headerlink" title="IO_file_jumps"></a>IO_file_jumps</h2><pre><code>&#123;
-__dummy = 0,
-__dummy2 = 0,
-__finish = 0x7ffff7c91a30 &lt;_IO_new_file_finish&gt;,
-__overflow = 0x7ffff7c92de0 &lt;_IO_new_file_overflow&gt;,
-__underflow = 0x7ffff7c92630 &lt;_IO_new_file_underflow&gt;,
-__uflow = 0x7ffff7c95590 &lt;__GI__IO_default_uflow&gt;,
-__pbackfail = 0x7ffff7c96dd0 &lt;__GI__IO_default_pbackfail&gt;,
-__xsputn = 0x7ffff7c939d0 &lt;_IO_new_file_xsputn&gt;,
-__xsgetn = 0x7ffff7c93d10 &lt;__GI__IO_file_xsgetn&gt;,
-__seekoff = 0x7ffff7c93150 &lt;_IO_new_file_seekoff&gt;,
-__seekpos = 0x7ffff7c95cb0 &lt;_IO_default_seekpos&gt;,
-__setbuf = 0x7ffff7c923f0 &lt;_IO_new_file_setbuf&gt;,
-__sync = 0x7ffff7c93000 &lt;_IO_new_file_sync&gt;,
-__doallocate = 0x7ffff7c85110 &lt;__GI__IO_file_doallocate&gt;,
-__read = 0x7ffff7c938a0 &lt;__GI__IO_file_read&gt;,
-__write = 0x7ffff7c93930 &lt;_IO_new_file_write&gt;,
-__seek = 0x7ffff7c938c0 &lt;__GI__IO_file_seek&gt;,
-__close = 0x7ffff7c93920 &lt;__GI__IO_file_close&gt;,
-__stat = 0x7ffff7c938d0 &lt;__GI__IO_file_stat&gt;,
-__showmanyc = 0x7ffff7c96f80 &lt;_IO_default_showmanyc&gt;,
-__imbue = 0x7ffff7c96f90 &lt;_IO_default_imbue&gt;
-&#125;
-</code></pre>
-<hr>
-
+<h1 id="IO结构体"><a href="#IO结构体" class="headerlink" title="IO结构体"></a><strong>IO结构体</strong></h1>
             
         </div>
     </div>
@@ -382,12 +237,12 @@ __imbue = 0x7ffff7c96f90 &lt;_IO_default_imbue&gt;
         
         <span class="tag">
             
-            <a href="/tags/IO/" style="color: #ffa2c4">IO</a>
+            <a href="/tags/IO/" style="color: #03a9f4">IO</a>
         </span>
         
         <span class="tag">
             
-            <a href="/tags/ctf/" style="color: #00bcd4">ctf</a>
+            <a href="/tags/ctf/" style="color: #ff7d73">ctf</a>
         </span>
         
     </div>
