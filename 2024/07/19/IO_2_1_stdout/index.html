@@ -11,7 +11,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
     />
-    <link rel="icon" href="/images/background3.jpg" />
+    <link rel="icon" href="/images/background1.jpg" />
     <link rel="preconnect" href="https://s4.zstatic.net" />
 <script src="https://s4.zstatic.net/ajax/libs/vue/3.3.7/vue.global.prod.min.js"></script>
 <link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
@@ -35,6 +35,11 @@
 <script src="/js/lib/highlight.js"></script>
 
 
+<script src="https://s4.zstatic.net/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://s4.zstatic.net/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/KaTeX/0.16.9/katex.min.css" />
+<script src="/js/lib/math.js"></script>
+
 
 <script src="/js/lib/preview.js"></script>
 
@@ -42,10 +47,9 @@
 
 
 
-<script src="https://s4.zstatic.net/ajax/libs/gitalk/1.8.0/gitalk.min.js"></script>
-<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/gitalk/1.8.0/gitalk.min.css" />
 
 
+<script src="https://s4.zstatic.net/ajax/libs/twikoo/1.6.31/twikoo.all.min.js"></script>
 
 
 
@@ -166,21 +170,21 @@
             
             <span class="tag">
                 
-                <a href="/tags/pwn/" style="color: #ff7d73">
+                <a href="/tags/pwn/" style="color: #ffa2c4">
                     pwn
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/IO/" style="color: #03a9f4">
+                <a href="/tags/IO/" style="color: #00a596">
                     IO
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/CTF/" style="color: #ff7d73">
+                <a href="/tags/CTF/" style="color: #ffa2c4">
                     CTF
                 </a>
             </span>
@@ -218,12 +222,12 @@
     
     
     
+    
+    
+    
     <div id="comment">
-        <div id="gitalk-container"></div>
+        <div id="twikoo-container"></div>
     </div>
-    
-    
-    
     
     
 </div>
@@ -259,21 +263,17 @@
     
     
 
+
+
 <script>
-    const gitalk = new Gitalk({
-        clientID: "",
-        clientSecret: "",
-        repo: "",
-        owner: "",
-        admin: "".split(","),
-        language: "",
-        id: location.pathname,
-        
+    twikoo.init({
+        el: "#twikoo-container",
+        envId: "",
+        region: "",
+        path: location.pathname,
+        lang: "",
     })
-    gitalk.render("gitalk-container");
 </script>
-
-
 
 
     
