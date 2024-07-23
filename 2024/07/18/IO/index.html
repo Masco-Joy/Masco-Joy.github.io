@@ -166,21 +166,21 @@
             
             <span class="tag">
                 
-                <a href="/tags/pwn/" style="color: #00a596">
+                <a href="/tags/pwn/" style="color: #ffa2c4">
                     pwn
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/IO/" style="color: #03a9f4">
+                <a href="/tags/IO/" style="color: #00bcd4">
                     IO
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/ctf/" style="color: #ff7d73">
+                <a href="/tags/ctf/" style="color: #00a596">
                     ctf
                 </a>
             </span>
@@ -251,7 +251,11 @@ _IO_lock_t *_lock;
 #ifdef _IO_USE_OLD_IO_FILE
 &#125;;
 </code></pre>
-<h2 id="IO-jump-t"><a href="#IO-jump-t" class="headerlink" title="_IO_jump_t"></a>_IO_jump_t</h2><pre><code>struct _IO_jump_t
+<br>
+<br>
+ ## _IO_jump_t
+
+<pre><code>struct _IO_jump_t
 &#123;
     JUMP_FIELD(size_t, __dummy);
     JUMP_FIELD(size_t, __dummy2);
@@ -281,7 +285,11 @@ _IO_lock_t *_lock;
 #endif
 &#125;;
 </code></pre>
-<h2 id="IO-str-jumps"><a href="#IO-str-jumps" class="headerlink" title="IO_str_jumps"></a>IO_str_jumps</h2><pre><code>1. // libio/strops.c
+<br>
+<br>
+## IO_str_jumps
+
+<pre><code>1. // libio/strops.c
 2. 
 3. const struct _IO_jump_t _IO_str_jumps libio_vtable =
 4. &#123;
@@ -308,10 +316,11 @@ _IO_lock_t *_lock;
 25. &#125;;
 
                                                                                                                                                                         
-                                                                                
-                                                                                         
-                                                                 
 </code></pre>
+ <br>
+<br>                                                                               
+                                                                                             
+                                                                     
 <h2 id="IO-file-jumps"><a href="#IO-file-jumps" class="headerlink" title="IO_file_jumps"></a>IO_file_jumps</h2><pre><code>&#123;
 __dummy = 0,
 __dummy2 = 0,

