@@ -193,6 +193,10 @@
 2、在使用%n时会进行一些检查。
 </code></pre>
 <p>这时如果程序加了字数限制，漏洞利用就会变得很麻烦。<br>所以这里采用  %a  来进行泄露，但是不同的 是%a是泄露数据，并且是泄露上方的数据与其他格式化字符串截然相反的泄露方向。</p>
+<br>
+<br>
+
+
 <h2 id="栈上格式化字符串（原理）"><a href="#栈上格式化字符串（原理）" class="headerlink" title="栈上格式化字符串（原理）"></a>栈上格式化字符串（原理）</h2><h3 id="32位"><a href="#32位" class="headerlink" title="32位"></a>32位</h3><p>1、由于在32位程序中，系统并不是采用的寄存器传参，所以关于printf的所有参数都会显示在栈上。<br>如同<br><img src="/images/format_stack.png" alt="图片"><br>其中依次存储的数据是prinf的内容、参数1、参数2、printf的返回地址。<br>如果我们用printf来打印其中的地址：</p>
 <pre><code>printf(&quot;%p,%p&quot;,&quot;test&quot;,&amp;a);
 </code></pre>
@@ -202,13 +206,16 @@
 3、如果遇到的是以%开头或转义字符，则程序进行解析，并作出与之对应的操作    
 </code></pre>
 <p>进行完这些程序就会打印出下面的结果<br><img src="/images/result.png" alt="图片"><br>第一个地址是“test”的地址，第二个地址是变量a的地址。<br>根据以上的规律我们不难发现利用%p，pritnf就会依次从esp-4的位置打印出地址。<br> 同时我们也可以了解到在使用类如  ”%n$p”  的n参数代表的是相较于格式化字符串的相对位置。</p>
-<p>根据以上的例子我们可以知道printf的基本原理，那么利用printf也就一目了然了，printf的利用也是无非在原理的基础利用程序本身的逻辑漏洞，或函数漏洞来进行攻击。   </p>
+<p>根据以上的例子我们可以知道printf的基本原理，那么利用printf也就一目了然了，printf的利用也是无非在原理的基础利用程序本身的逻辑漏洞，或函数漏洞来进行攻击。<br><br><br><br></p>
 <h3 id="64位"><a href="#64位" class="headerlink" title="64位"></a>64位</h3><p>1、在64位程序中我们知道，程序改为先用寄存器来进行依次传参，所以原本的</p>
 <pre><code>printf(&quot;%p,%p&quot;,&quot;test&quot;,&amp;a);
 </code></pre>
 <p>就会将%p先存储在rdi中然后剩下的参数就按顺序依次存储在剩下的5个寄存器中。  </p>
 <p>所以64位中若是想要泄露栈上的地址应该要先从  %6$p 开始。  </p>
 <p>2、除了寄存器传参剩下就和32位程序一致了。   </p>
+<br>
+<br>   
+                        
 <p>2、<br>先可以通过例题回忆一下<br>DASCTF<br><img src="/images/dactf_fmtN.png" alt="图片"><br>类似这种read的变量非栈上时，并且只有一个main函数时，就可以利用改写ret的地址为onegadget。   </p>
 <pre><code>!/usr/bin/python3
 from pwn import *

@@ -166,7 +166,7 @@
             
             <span class="tag">
                 
-                <a href="/tags/pwn/" style="color: #ffa2c4">
+                <a href="/tags/pwn/" style="color: #00a596">
                     pwn
                 </a>
             </span>
@@ -192,7 +192,7 @@
     <div class="content" v-pre>
         <hr>
 <h1 id="IO结构体"><a href="#IO结构体" class="headerlink" title="IO结构体"></a><strong>IO结构体</strong></h1> <span id="more"></span>                                                                                 
-<p>关于IO_file_jumps中函数的具体作用可以参考以下两个博客<br><a target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">国资</a>                                                              和<a target="_blank" rel="noopener" href="https://ray-cp.github.io/">ray-cp</a>   或者星盟的也可以</p>
+<p>关于IO_file_jumps中函数的具体作用可以参考以下两个博客<br><a target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">国资</a><br> 和<a target="_blank" rel="noopener" href="https://ray-cp.github.io/">ray-cp</a>   或者星盟的也可以</p>
 <h2 id="IO-FILE-plus"><a href="#IO-FILE-plus" class="headerlink" title="IO_FILE_plus"></a>IO_FILE_plus</h2><pre><code>    struct _IO_FILE_plus
     &#123;
     _IO_FILE file;
@@ -253,9 +253,8 @@ _IO_lock_t *_lock;
 </code></pre>
 <br>
 <br>
- ## _IO_jump_t
 
-<pre><code>struct _IO_jump_t
+<h2 id="IO-jump-t"><a href="#IO-jump-t" class="headerlink" title="_IO_jump_t"></a>_IO_jump_t</h2><pre><code>struct _IO_jump_t
 &#123;
     JUMP_FIELD(size_t, __dummy);
     JUMP_FIELD(size_t, __dummy2);
@@ -287,9 +286,8 @@ _IO_lock_t *_lock;
 </code></pre>
 <br>
 <br>
-## IO_str_jumps
 
-<pre><code>1. // libio/strops.c
+<h2 id="IO-str-jumps"><a href="#IO-str-jumps" class="headerlink" title="IO_str_jumps"></a>IO_str_jumps</h2><pre><code>1. // libio/strops.c
 2. 
 3. const struct _IO_jump_t _IO_str_jumps libio_vtable =
 4. &#123;
@@ -314,10 +312,8 @@ _IO_lock_t *_lock;
 23.   JUMP_INIT(showmanyc, _IO_default_showmanyc),
 24.   JUMP_INIT(imbue, _IO_default_imbue)
 25. &#125;;
-
-                                                                                                                                                                        
 </code></pre>
- <br>
+<br>
 <br>                                                                               
                                                                                              
                                                                      

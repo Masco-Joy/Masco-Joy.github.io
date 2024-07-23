@@ -166,15 +166,8 @@
             
             <span class="tag">
                 
-                <a href="/tags/pwn/" style="color: #03a9f4">
+                <a href="/tags/pwn/" style="color: #00bcd4">
                     pwn
-                </a>
-            </span>
-            
-            <span class="tag">
-                
-                <a href="/tags/CTF/" style="color: #00bcd4">
-                    CTF
                 </a>
             </span>
             
@@ -182,6 +175,13 @@
                 
                 <a href="/tags/heap/" style="color: #ffa2c4">
                     heap
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/CTF/" style="color: #ff7d73">
+                    CTF
                 </a>
             </span>
             
@@ -275,10 +275,8 @@ if ((unsigned long)(size) &lt;= (unsigned long)(get_max_fast ())
 <p>所以我们选取的攻击目标地址的偏移size成员数值的NON_MAIN_ARENA、IS_MAPPED、PREV_INUSE位都要为1，比如当前fastbin所能管理的freechunk大小为0x70~0x80，而伪造的size成员处的数值为0x71、0x72这样的数值不能够符合要求的，但0x7f这样的地址就可以满足需要，因此构造完之后，攻击目标地址的伪造size成员成员数值的NON_MAIN_ARENA、IS_MAPPED、PREV_INUSE位都要为1，0x7f就可以满足.  </p>
 <br>
 <br>
-## Unsortedbin attack
-作用：将P->bk->fd赋值为P->fd。
 
-
+<h2 id="Unsortedbin-attack"><a href="#Unsortedbin-attack" class="headerlink" title="Unsortedbin attack"></a>Unsortedbin attack</h2><p>作用：将P-&gt;bk-&gt;fd赋值为P-&gt;fd。</p>
 <p>1、首先是unsortedbin 的分配机制，超出了fastbin和tachebin范围的free chunk就会进入unsortedbin中，并且unsortedbin是先从末尾取出chunk进行分配的，后free的chunk会进入先free的chunk的前面。unsortedbin顾名思义，未分类的chunk，所以只要用户重新申请了chunk，unsortedbin中的chunk就会被重新分类，按照其chunk的大小分别进入smallbin、largebin…中。在glibc2.26版本及以下时，还只有fastbin没有tachebin，这时候只要用户free的是大于0x80这个值时就会被free进unsortedbin中。</p>
 <p>2、unsortedbin的利用。主要就是利用其中的bk指针</p>
 <pre><code>//bck是倒数第二个chunk，victim里存的是倒数第一个chunk
@@ -318,13 +316,10 @@ bck-&gt;fd = unsorted_chunks (av);
 </code></pre>
 <br>
 <br>
-## Largebin attack
 
-
-<p>(总的来说，利用方法与unsortedbin差不多，并且其中的利用效果都一样，只是largebin除了可以利用bk还可以利用bk_nextsize）</p>
+<h2 id="Largebin-attack"><a href="#Largebin-attack" class="headerlink" title="Largebin attack"></a>Largebin attack</h2><p>(总的来说，利用方法与unsortedbin差不多，并且其中的利用效果都一样，只是largebin除了可以利用bk还可以利用bk_nextsize）</p>
 <p>1、规则<br>（1）、共有63个bins，每个bin的size域值各不相同，但是公差是一致的。（大于0x3F0的chunk在遍历后进入largebin，反之小于的则进入到smallbin）<br>（2）、由大到小进行存储，若大小一致则按照时间顺序存储。（小的chunk链接到largebin）</p>
-<p>2、新增fd_nextsize与bk_nextsize这两指针。fd_nextsize的作用是记录前面第一个与此chunk的size不同的chunk的地址，而bk_nextsize则是记录后面第一个与此chunk的size不同的chunk的地址。（只有第一个chunk的fd&#x2F;bk_nextsize进行记录，其他的默认为0）</p>
-<p>3、attack<br>已知largebin对chunk进行操作有三种情况<br>（进行伪造工作的chunk是chunk_B又名P2，chunk_A是P3其size大于P2）</p>
+<p>2、新增fd_nextsize与bk_nextsize这两指针。fd_nextsize的作用是记录前面第一个与此chunk的size不同的chunk的地址，而bk_nextsize则是记录后面第一个与此chunk的size不同的chunk的地址。（只有第一个chunk的fd&#x2F;bk_nextsize进行记录，其他的默认为0）<br><br><br>3、attack<br>已知largebin对chunk进行操作有三种情况<br>（进行伪造工作的chunk是chunk_B又名P2，chunk_A是P3其size大于P2）</p>
 <p>（1）、chunk_A大于chunk_B</p>
 <p>（2）、chunk_A小于chunk_B</p>
 <p>（3）、chunk_A等于chunk_B</p>
@@ -381,13 +376,11 @@ unlink_chunk (av, victim);
 37     fprintf(stderr, &quot;stack_var2 (%p): %p\n&quot;, &amp;stack_var2, (void *)stack_var2);
 38
 39     return 0;
-40 &#125;     
+40 &#125;      
 </code></pre>
 <br>
-## largbinattck 例题     
-### DASCTF magicbook      
-于ubuntu题集中，magicbook文件夹  
 
+<h2 id="largbinattck-例题"><a href="#largbinattck-例题" class="headerlink" title="largbinattck 例题"></a>largbinattck 例题</h2><h3 id="DASCTF-magicbook"><a href="#DASCTF-magicbook" class="headerlink" title="DASCTF magicbook"></a>DASCTF magicbook</h3><p>于ubuntu题集中，magicbook文件夹  </p>
 <pre><code>#!/usr/bin/python3
 from pwn import *
 from LibcSearcher import *
