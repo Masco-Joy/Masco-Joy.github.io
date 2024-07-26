@@ -172,15 +172,15 @@
             
             <span class="tag">
                 
-                <a href="/tags/CTF/" style="color: #00a596">
-                    CTF
+                <a href="/tags/heap/" style="color: #ffa2c4">
+                    heap
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/heap/" style="color: #ff7d73">
-                    heap
+                <a href="/tags/CTF/" style="color: #03a9f4">
+                    CTF
                 </a>
             </span>
             
@@ -275,7 +275,7 @@ if ((unsigned long)(size) &lt;= (unsigned long)(get_max_fast ())
 <br>
 <br>
 
-<h2 id="Unsortedbin-attack"><a href="#Unsortedbin-attack" class="headerlink" title="Unsortedbin attack"></a>Unsortedbin attack</h2><p>作用：将P-&gt;bk-&gt;fd赋值为P-&gt;fd。</p>
+<h2 id="Unsortedbin-attack"><a href="#Unsortedbin-attack" class="headerlink" title="Unsortedbin attack"></a>Unsortedbin attack</h2><p>作用：将P-&gt;bk-&gt;fd赋值为P-&gt;fd。<br>tips：<br>1、于glibc2.27时添加了保护<br>2、于glibc2.29时unsortedbin attack被彻底扼杀     </p>
 <p>1、首先是unsortedbin 的分配机制，超出了fastbin和tachebin范围的free chunk就会进入unsortedbin中，并且unsortedbin是先从末尾取出chunk进行分配的，后free的chunk会进入先free的chunk的前面。unsortedbin顾名思义，未分类的chunk，所以只要用户重新申请了chunk，unsortedbin中的chunk就会被重新分类，按照其chunk的大小分别进入smallbin、largebin…中。在glibc2.26版本及以下时，还只有fastbin没有tachebin，这时候只要用户free的是大于0x80这个值时就会被free进unsortedbin中。</p>
 <p>2、unsortedbin的利用。主要就是利用其中的bk指针</p>
 <pre><code>//bck是倒数第二个chunk，victim里存的是倒数第一个chunk
@@ -283,9 +283,9 @@ if ((unsigned long)(size) &lt;= (unsigned long)(get_max_fast ())
 if (__glibc_unlikely (bck-&gt;fd != victim))
         malloc_printerr (&quot;malloc(): corrupted unsorted chunks 3&quot;);
 unsorted_chunks (av)-&gt;bk = bck;
-bck-&gt;fd = unsorted_chunks (av);
+bck-&gt;fd = unsorted_chunks (av);       
 </code></pre>
-<p>如上所示，里面没有涉及到victim的fd指针，只有其bk以及bck的fd。所以主要利用也是从victim的bk入手，修改其bk为一个我们已知的地址，这样bck就变成了我们的fake_chunk。victim的bk就会指向fake_chunk-0x10的位置。所以当我们重新启用victim时也就是对其malloc时。<br>则fake_chunk-0x10的fd就会指向unsortbin。<br>不过由于我们突然插入的chunk，后续的unsortbin在进行分配时可能会出现问题。</p>
+<p>当倒数第一个chunk被取出来时 “ unsorted_chunks (av)-&gt;bk &#x3D; bck; “对bk进行赋值，然后” unsorted_chunks (av)-&gt;bk &#x3D; bck; “这里bck就是我们伪造的fake_bk，看到”fake_bk-&gt;fd&#x3D;av； “，这里直接被赋值成了av，也就是main_arena。<br>  <br><br>不过由于我们突然插入的chunk，破坏了其bk链和fd链，后续的unsortbin在进行分配时可能会出现问题。</p>
 <p>测试案例</p>
 <pre><code>How2heap(使用 gcc -g 进行编译)
 1 //gcc hollk.c -g -no-pie -o hollk
@@ -316,16 +316,26 @@ bck-&gt;fd = unsorted_chunks (av);
 <br>
 <br>
 
-<h2 id="Largebin-attack"><a href="#Largebin-attack" class="headerlink" title="Largebin attack"></a>Largebin attack</h2><p>(总的来说，利用方法与unsortedbin差不多，并且其中的利用效果都一样，只是largebin除了可以利用bk还可以利用bk_nextsize）</p>
+<h2 id="Largebin-attack"><a href="#Largebin-attack" class="headerlink" title="Largebin attack"></a>Largebin attack</h2><p>tips:   </p>
+<pre><code>1、在glibc2.27及以上中因为添加了tachebin，所以低于0x420的chunk不会进unsortedbin。
+2、在glibc2.27一下的大于0x80进unsortedbin，大于0x3f0进largebin。  
+3、largebin的公差为0x40      
+4、于glibc2.29时unsortedbin attack被彻底扼杀
+</code></pre>
+<p>(总的来说，利用方法与unsortedbin差不多，并且其中的利用效果都一样，只是largebin除了可以利用bk还可以利用bk_nextsize）</p>
 <p>1、规则<br>（1）、共有63个bins，每个bin的size域值各不相同，但是公差是一致的。（大于0x3F0的chunk在遍历后进入largebin，反之小于的则进入到smallbin）<br>（2）、由大到小进行存储，若大小一致则按照时间顺序存储。（小的chunk链接到largebin）</p>
-<p>2、新增fd_nextsize与bk_nextsize这两指针。fd_nextsize的作用是记录前面第一个与此chunk的size不同的chunk的地址，而bk_nextsize则是记录后面第一个与此chunk的size不同的chunk的地址。（只有第一个chunk的fd&#x2F;bk_nextsize进行记录，其他的默认为0）<br><br><br>3、attack<br>已知largebin对chunk进行操作有三种情况<br>（进行伪造工作的chunk是chunk_B又名P2，chunk_A是P3其size大于P2）</p>
+<p>2、新增fd_nextsize与bk_nextsize这两指针。fd_nextsize(指向小的chunk的头部)的作用是记录前面第一个与此chunk的size不同的chunk的地址，而bk_nextsize(指向大的chunk的头部)则是记录后面第一个与此chunk的size不同的chunk的地址。（只有第一个chunk的fd&#x2F;bk_nextsize进行记录，其他的默认为0）<br><br><br>3、attack<br>已知largebin对chunk进行操作有三种情况<br>（进行伪造工作的chunk是chunk_B又名P2，chunk_A是P3其size大于P2）</p>
 <p>（1）、chunk_A大于chunk_B</p>
 <p>（2）、chunk_A小于chunk_B</p>
 <p>（3）、chunk_A等于chunk_B</p>
 <p>又得知，largbin是按chunk由大到小进行排列的，小的那一方chunk靠近largebin<br>又又得知，对chunk进行操作的三种情况      </p>
-<p>（其中chunk_A是P3，chunk_B是P2，p2-&gt;bk是value1-0x10，p2-&gt;bk_nextsize是value2-0x20）<br>(1)、vitim&gt;fwd<br><img src="/images/u1.png" alt="图片"><br>可以看到这里的victim被赋了一系列的值，bk_nextsize,bk都被fwd赋了值  </p>
+<p>（其中chunk_A是P3，chunk_B是P2，p2-&gt;bk是value1-0x10，p2-&gt;bk_nextsize是value2-0x20）<br>(1)、vitim&gt;fwd<br><img src="/images/u1.png" alt="图片"><br>可以看到这里  </p>
+<pre><code>victim-&gt;bk_nextsize=fwd-&gt;bknextsize
+victime-&gt;bknextsize-&gt;fd_nextsize=victm  
+</code></pre>
+<p>这里的bk_nextsize-&gt;fd_nextsize被赋值成了victim的头指针.</p>
 <p>（2）、victim&lt;fwd<br><img src="/images/u2.png" alt="图片">   </p>
-<p>（3）、victim&#x3D;&#x3D;fwd<br><img src="/images/u3.png" alt="图片"></p>
+<p>（3）、victim&#x3D;&#x3D;fwd<br><img src="/images/u3.png" alt="图片"><br><br><br>上面是bk_nextsize<br>接下来就是bk<br><img src="/images/largebin_bk.png" alt="图片"></p>
 <p>另外需要注意，伪造的堆块fd_nextsize需要设置为0.不然无法通过以下unlink检查。（需要进行伪造的free chunk是victim）<br>    size &#x3D; chunksize (victim);</p>
 <pre><code>/*  We know the first chunk in this bin is big enough to use. */
 assert ((unsigned long) (size) &gt;= (unsigned long) (nb));
