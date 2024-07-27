@@ -165,22 +165,22 @@
             
             <span class="tag">
                 
-                <a href="/tags/pwn/" style="color: #ff7d73">
+                <a href="/tags/pwn/" style="color: #00bcd4">
                     pwn
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/heap/" style="color: #ffa2c4">
-                    heap
+                <a href="/tags/CTF/" style="color: #ff7d73">
+                    CTF
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/CTF/" style="color: #03a9f4">
-                    CTF
+                <a href="/tags/heap/" style="color: #03a9f4">
+                    heap
                 </a>
             </span>
             
@@ -191,6 +191,8 @@
     <div class="content" v-pre>
         <hr>
 <h1 id="堆中bin的利用"><a href="#堆中bin的利用" class="headerlink" title="堆中bin的利用"></a>堆中bin的利用</h1><span id="more"></span>
+
+<p><em>tips:</em><br>1、fastbin、tachebin遵循先进后出<br>2、unsortedbin、largebin、smallbin遵循先进先出<br>3、unsortedbin attack于glibc2.27时添加了保护<br>4、unsortedbin attack于glibc2.29被彻底扼杀<br>5、在glibc2.27及以上中因为添加了tachebin，所以低于0x420的chunk不会进unsortedbin。<br>6、在glibc2.27以下的大于0x80进unsortedbin，大于0x3f0进largebin。<br>7、largebin的公差为0x40          </p>
 <h2 id="Fastbin-attack"><a href="#Fastbin-attack" class="headerlink" title="Fastbin attack"></a>Fastbin attack</h2><p>个人觉得fastbin attack总结起来其实利用就只有两个，double free、地址任意分配。   </p>
 <p>1、首先fastbin是由什么来进行管理的呢？<br>答案是fastbinY数组进行管理，这个数组是main_arena的一个成员变量，数组的最大下标是7.<br>由fastbin所管理的chunk，根据其chunk的大小的不同从而进入不同的fastbinY中，大小顺序是从0x20-0x80，依次对应不用的数组下标。    </p>
 <p>1、在fastbin中，它的prev_in_use位总是为1的。</p>
@@ -275,7 +277,7 @@ if ((unsigned long)(size) &lt;= (unsigned long)(get_max_fast ())
 <br>
 <br>
 
-<h2 id="Unsortedbin-attack"><a href="#Unsortedbin-attack" class="headerlink" title="Unsortedbin attack"></a>Unsortedbin attack</h2><p>作用：将P-&gt;bk-&gt;fd赋值为P-&gt;fd。<br>tips：<br>1、于glibc2.27时添加了保护<br>2、于glibc2.29时unsortedbin attack被彻底扼杀     </p>
+<h2 id="Unsortedbin-attack"><a href="#Unsortedbin-attack" class="headerlink" title="Unsortedbin attack"></a>Unsortedbin attack</h2><p>作用：将P-&gt;bk-&gt;fd赋值为P-&gt;fd。</p>
 <p>1、首先是unsortedbin 的分配机制，超出了fastbin和tachebin范围的free chunk就会进入unsortedbin中，并且unsortedbin是先从末尾取出chunk进行分配的，后free的chunk会进入先free的chunk的前面。unsortedbin顾名思义，未分类的chunk，所以只要用户重新申请了chunk，unsortedbin中的chunk就会被重新分类，按照其chunk的大小分别进入smallbin、largebin…中。在glibc2.26版本及以下时，还只有fastbin没有tachebin，这时候只要用户free的是大于0x80这个值时就会被free进unsortedbin中。</p>
 <p>2、unsortedbin的利用。主要就是利用其中的bk指针</p>
 <pre><code>//bck是倒数第二个chunk，victim里存的是倒数第一个chunk
@@ -316,13 +318,7 @@ bck-&gt;fd = unsorted_chunks (av);
 <br>
 <br>
 
-<h2 id="Largebin-attack"><a href="#Largebin-attack" class="headerlink" title="Largebin attack"></a>Largebin attack</h2><p>tips:   </p>
-<pre><code>1、在glibc2.27及以上中因为添加了tachebin，所以低于0x420的chunk不会进unsortedbin。
-2、在glibc2.27一下的大于0x80进unsortedbin，大于0x3f0进largebin。  
-3、largebin的公差为0x40      
-4、于glibc2.29时unsortedbin attack被彻底扼杀
-</code></pre>
-<p>(总的来说，利用方法与unsortedbin差不多，并且其中的利用效果都一样，只是largebin除了可以利用bk还可以利用bk_nextsize）</p>
+<h2 id="Largebin-attack"><a href="#Largebin-attack" class="headerlink" title="Largebin attack"></a>Largebin attack</h2><p>(总的来说，利用方法与unsortedbin差不多，并且其中的利用效果都一样，只是largebin除了可以利用bk还可以利用bk_nextsize）</p>
 <p>1、规则<br>（1）、共有63个bins，每个bin的size域值各不相同，但是公差是一致的。（大于0x3F0的chunk在遍历后进入largebin，反之小于的则进入到smallbin）<br>（2）、由大到小进行存储，若大小一致则按照时间顺序存储。（小的chunk链接到largebin）</p>
 <p>2、新增fd_nextsize与bk_nextsize这两指针。fd_nextsize(指向小的chunk的头部)的作用是记录前面第一个与此chunk的size不同的chunk的地址，而bk_nextsize(指向大的chunk的头部)则是记录后面第一个与此chunk的size不同的chunk的地址。（只有第一个chunk的fd&#x2F;bk_nextsize进行记录，其他的默认为0）<br><br><br>3、attack<br>已知largebin对chunk进行操作有三种情况<br>（进行伪造工作的chunk是chunk_B又名P2，chunk_A是P3其size大于P2）</p>
 <p>（1）、chunk_A大于chunk_B</p>
@@ -343,7 +339,41 @@ assert ((unsigned long) (size) &gt;= (unsigned long) (nb));
 remainder_size = size - nb;
 
 /* unlink */
-unlink_chunk (av, victim);
+unlink_chunk (av, victim);  
+  
+</code></pre>
+ <br>
+ <br>     
+<em>然而上述的用法也只能存在于glbc2.30之前。                  
+
+<p>在其之后则又增加了判断,判断fwd的bk_nextsize的fd_nextsize是等于我们的fwd，由于之前我们都是直接伪造的fwd的fbk_nextsize，所以这新增的条件肯定不满足。</p></em>       <p></p>
+<pre><code>if ((unsigned long) size == (unsigned long) chunksize_nomask (fwd))
+        /* Always insert in the second position.  */
+    fwd = fwd-&gt;fd;
+else
+    &#123;
+        victim-&gt;fd_nextsize = fwd;
+        victim-&gt;bk_nextsize = fwd-&gt;bk_nextsize;
+        if (__glibc_unlikely (fwd-&gt;bk_nextsize-&gt;fd_nextsize != fwd))
+            malloc_printerr (&quot;malloc(): largebin double linked list corrupted (nextsize)&quot;);
+            fwd-&gt;bk_nextsize = victim;
+            victim-&gt;bk_nextsize-&gt;fd_nextsize = victim;
+                            &#125;
+    bck = fwd-&gt;bk;
+        if (bck-&gt;fd != fwd)
+            malloc_printerr (&quot;malloc(): largebin double linked list corrupted (bk)&quot;);
+</code></pre>
+<br>
+<em>不过在其之后又有新的利用手法，利用的是第一个if判断</em>
+    
+
+<pre><code>if ((unsigned long) (size) &lt; (unsigned long) chunksize_nomask (bck-&gt;bk))&#123;
+    fwd = bck;
+    bck = bck-&gt;bk;
+    victim-&gt;fd_nextsize = fwd-&gt;fd;
+    victim-&gt;bk_nextsize = fwd-&gt;fd-&gt;bk_nextsize;
+    fwd-&gt;fd-&gt;bk_nextsize = victim-&gt;bk_nextsize-&gt;fd_nextsize = victim;
+&#125;
 </code></pre>
 <p>测试案例（how2heap gcc-g 编译）  </p>
 <pre><code>// gcc -g 
