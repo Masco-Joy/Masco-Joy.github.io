@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="CN-zh">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"masco-joy.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="IO结构体">
+<meta property="og:type" content="article">
+<meta property="og:title" content="IO">
+<meta property="og:url" content="https://masco-joy.github.io/2024/07/18/IO/index.html">
+<meta property="og:site_name" content="Masco&#39;s blog">
+<meta property="og:description" content="IO结构体">
+<meta property="og:locale" content="cn_ZH">
+<meta property="article:published_time" content="2024-07-18T12:41:15.000Z">
+<meta property="article:modified_time" content="2024-07-25T09:19:59.335Z">
+<meta property="article:author" content="Masco">
+<meta property="article:tag" content="pwn">
+<meta property="article:tag" content="IO">
+<meta property="article:tag" content="ctf">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://masco-joy.github.io/2024/07/18/IO/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'CN-zh'
+  };
+</script>
+
+  <title>IO | Masco's blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Navigationsleiste an/ausschalten">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Masco's blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Startseite</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archiv</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Suche
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="Suche..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="CN-zh">
+    <link itemprop="mainEntityOfPage" href="https://masco-joy.github.io/2024/07/18/IO/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Masco">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Masco's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          IO
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Veröffentlicht am</span>
+
+              <time title="Erstellt: 2024-07-18 20:41:15" itemprop="dateCreated datePublished" datetime="2024-07-18T20:41:15+08:00">2024-07-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Bearbeitet am</span>
+                <time title="Geändert am: 2024-07-25 17:19:59" itemprop="dateModified" datetime="2024-07-25T17:19:59+08:00">2024-07-25</time>
+              </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbole im Artikel gezählt">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">Symbole im Artikel gezählt: </span>
+              <span>5.4k</span>
+            </span>
+            <span class="post-meta-item" title="Lesezeit">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">Lesezeit &asymp;</span>
+              <span>9 minuten.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <hr>
+<h1 id="IO结构体"><a href="#IO结构体" class="headerlink" title="IO结构体"></a><strong>IO结构体</strong></h1> <span id="more"></span>                                                                                 
+<p>关于IO_file_jumps中函数的具体作用可以参考以下两个博客<br><a target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">国资</a>和<a target="_blank" rel="noopener" href="https://ray-cp.github.io/">ray-cp</a> 或者星盟的也可以      </p>
+<br>
+<br>
+
+<h2 id="缓冲区"><a href="#缓冲区" class="headerlink" title="缓冲区"></a>缓冲区</h2><p><em>引入原因： </em><br>对于LBA硬盘来说，读写数据都必须一块一块的读，如果我们每次执行read，write时都是操作很少的数据，则对系统消耗非常大，因此，C库就想了一个好办法——缓冲区。   </p>
+<pre><code>1、输入缓冲区   
+从外部硬件读取时。为了减少消耗，会一次从外部硬件读取一“块”数据，并放入缓冲区，然后当target需要时，再从头部慢慢读取，只到读完才再次从硬件读取。这个缓冲区叫输入缓冲区。      
+
+对于输入缓冲区ptr-end是有用的数据，base-ptr为已使用的数据。
+
+
+2、输出缓冲区  
+向外部硬件写入时。为了减少消耗，不会一有东西就写入，而是先将内容从source写入缓冲区，当缓冲区满了时候再将内存一起写入硬件。这个缓冲区叫输出缓冲区。
+
+对于输出缓冲区base-ptr是要写入硬件的内容（有用数据），ptr-end为空闲区域。  
+</code></pre>
+<h2 id="IO-FILE-plus"><a href="#IO-FILE-plus" class="headerlink" title="IO_FILE_plus"></a>IO_FILE_plus</h2><pre><code>    struct _IO_FILE_plus
+    &#123;
+    _IO_FILE file;
+    const struct _IO_jump_t *vtable;
+    &#125;;
+    IO_FILE(结构体）
+    - struct _IO_FILE &#123;
+    int _flags;       /* High-order word is _IO_MAGIC; rest is flags. */
+    #define _IO_file_flags _flags
+
+char_IO_read_ptr;   /* Current read pointer */ 
+char_IO_read_end;   /* End of get area. */
+char_IO_read_base;  /* Start of putback+get area. */
+- //read ptr是现在read指针指向的位置，end则是read读取结束的位置，base则是开始的位置
+- 
+
+char_IO_write_base; /* Start of put area. */
+char_IO_write_ptr;  /* Current put pointer. */
+char_IO_write_end;  /* End of put area. */
+//write的指针的作用是与read指针的作用是一致的
+
+char_IO_buf_base;   /* Start of reserve area. */
+char_IO_buf_end;    /* End of reserve area. */
+//缓冲区的位置
+
+
+/* The following fields are used to support backing up and undo. */
+char *_IO_save_base; /* Pointer to start of non-current get area. */
+char *_IO_backup_base;  /* Pointer to first valid character of backup area */
+char *_IO_save_end; /* Pointer to end of non-current get area. */
+
+struct _IO_marker *_markers;
+
+struct _IO_FILE *_chain;
+//chain依次链接的是stdin、stdout、stderr
+
+int _fileno;
+//一般指的是目前是在哪个chain里，0是in，1是out，2是err
+
+#if 0
+int _blksize;
+#else
+int _flags2;
+#endif
+_IO_off_t _old_offset; /* This used to be _offset but it&#39;s too small.  */
+
+#define __HAVE_COLUMN /* temporary */
+/* 1+column number of pbase(); 0 is unknown. */
+unsigned short _cur_column;
+signed char _vtable_offset;
+char _shortbuf[1];
+
+/*  char* _save_gptr;  char* _save_egptr; */
+
+_IO_lock_t *_lock;
+#ifdef _IO_USE_OLD_IO_FILE
+&#125;;
+</code></pre>
+<br>
+<br>
+
+<h2 id="IO-jump-t"><a href="#IO-jump-t" class="headerlink" title="_IO_jump_t"></a>_IO_jump_t</h2><pre><code>struct _IO_jump_t
+&#123;
+    JUMP_FIELD(size_t, __dummy);
+    JUMP_FIELD(size_t, __dummy2);
+    JUMP_FIELD(_IO_finish_t, __finish);
+    JUMP_FIELD(_IO_overflow_t, __overflow);
+    JUMP_FIELD(_IO_underflow_t, __underflow);
+    JUMP_FIELD(_IO_underflow_t, __uflow);
+    JUMP_FIELD(_IO_pbackfail_t, __pbackfail);
+    /* showmany */
+    JUMP_FIELD(_IO_xsputn_t, __xsputn);
+    JUMP_FIELD(_IO_xsgetn_t, __xsgetn);
+    JUMP_FIELD(_IO_seekoff_t, __seekoff);
+    JUMP_FIELD(_IO_seekpos_t, __seekpos);
+    JUMP_FIELD(_IO_setbuf_t, __setbuf);
+    JUMP_FIELD(_IO_sync_t, __sync);
+    JUMP_FIELD(_IO_doallocate_t, __doallocate);
+    JUMP_FIELD(_IO_read_t, __read);
+    JUMP_FIELD(_IO_write_t, __write);
+    JUMP_FIELD(_IO_seek_t, __seek);
+    JUMP_FIELD(_IO_close_t, __close);
+    JUMP_FIELD(_IO_stat_t, __stat);
+    JUMP_FIELD(_IO_showmanyc_t, __showmanyc);
+    JUMP_FIELD(_IO_imbue_t, __imbue);
+#if 0
+    get_column;
+    set_column;
+#endif
+&#125;;
+</code></pre>
+<br>
+<br>
+
+<h2 id="IO-str-jumps"><a href="#IO-str-jumps" class="headerlink" title="IO_str_jumps"></a>IO_str_jumps</h2><pre><code>1. // libio/strops.c
+2. 
+3. const struct _IO_jump_t _IO_str_jumps libio_vtable =
+4. &#123;
+5.   JUMP_INIT_DUMMY,
+6.   JUMP_INIT(finish, _IO_str_finish),
+7.   JUMP_INIT(overflow, _IO_str_overflow),
+8.   JUMP_INIT(underflow, _IO_str_underflow),
+9.   JUMP_INIT(uflow, _IO_default_uflow),
+10.   JUMP_INIT(pbackfail, _IO_str_pbackfail),
+11.   JUMP_INIT(xsputn, _IO_default_xsputn),
+12.   JUMP_INIT(xsgetn, _IO_default_xsgetn),
+13.   JUMP_INIT(seekoff, _IO_str_seekoff),
+14.   JUMP_INIT(seekpos, _IO_default_seekpos),
+15.   JUMP_INIT(setbuf, _IO_default_setbuf),
+16.   JUMP_INIT(sync, _IO_default_sync),
+17.   JUMP_INIT(doallocate, _IO_default_doallocate),
+18.   JUMP_INIT(read, _IO_default_read),
+19.   JUMP_INIT(write, _IO_default_write),
+20.   JUMP_INIT(seek, _IO_default_seek),
+21.   JUMP_INIT(close, _IO_default_close),
+22.   JUMP_INIT(stat, _IO_default_stat),
+23.   JUMP_INIT(showmanyc, _IO_default_showmanyc),
+24.   JUMP_INIT(imbue, _IO_default_imbue)
+25. &#125;;
+</code></pre>
+<br>
+<br>                                                                               
+                                                                                             
+
+
+<h2 id="IO-file-jumps"><a href="#IO-file-jumps" class="headerlink" title="IO_file_jumps"></a>IO_file_jumps</h2><pre><code>&#123;
+__dummy = 0,
+__dummy2 = 0,
+__finish = 0x7ffff7c91a30 &lt;_IO_new_file_finish&gt;,
+__overflow = 0x7ffff7c92de0 &lt;_IO_new_file_overflow&gt;,
+__underflow = 0x7ffff7c92630 &lt;_IO_new_file_underflow&gt;,
+__uflow = 0x7ffff7c95590 &lt;__GI__IO_default_uflow&gt;,
+__pbackfail = 0x7ffff7c96dd0 &lt;__GI__IO_default_pbackfail&gt;,
+__xsputn = 0x7ffff7c939d0 &lt;_IO_new_file_xsputn&gt;,
+__xsgetn = 0x7ffff7c93d10 &lt;__GI__IO_file_xsgetn&gt;,
+__seekoff = 0x7ffff7c93150 &lt;_IO_new_file_seekoff&gt;,
+__seekpos = 0x7ffff7c95cb0 &lt;_IO_default_seekpos&gt;,
+__setbuf = 0x7ffff7c923f0 &lt;_IO_new_file_setbuf&gt;,
+__sync = 0x7ffff7c93000 &lt;_IO_new_file_sync&gt;,
+__doallocate = 0x7ffff7c85110 &lt;__GI__IO_file_doallocate&gt;,
+__read = 0x7ffff7c938a0 &lt;__GI__IO_file_read&gt;,
+__write = 0x7ffff7c93930 &lt;_IO_new_file_write&gt;,
+__seek = 0x7ffff7c938c0 &lt;__GI__IO_file_seek&gt;,
+__close = 0x7ffff7c93920 &lt;__GI__IO_file_close&gt;,
+__stat = 0x7ffff7c938d0 &lt;__GI__IO_file_stat&gt;,
+__showmanyc = 0x7ffff7c96f80 &lt;_IO_default_showmanyc&gt;,
+__imbue = 0x7ffff7c96f90 &lt;_IO_default_imbue&gt;
+&#125;
+</code></pre>
+  <br>
+
+<h3 id="glibc2-24增加的vtable-check"><a href="#glibc2-24增加的vtable-check" class="headerlink" title="glibc2.24增加的vtable_check"></a>glibc2.24增加的vtable_check</h3><pre><code>void _IO_vtable_check (void) attribute_hidden;
+static inline const struct _IO_jump_t *
+IO_validate_vtable (const struct _IO_jump_t *vtable)
+&#123;
+uintptr_t section_length = __stop___libc_IO_vtables -__start___libc_IO_vtables;
+uintptr_t ptr = (uintptr_t) vtable;
+uintptr_t offset = ptr -(uintptr_t)__start___libc_IO_vtables;
+if (__glibc_unlikely (offset &gt;= section_length))
+    _IO_vtable_check ();
+return vtable;
+&#125;    
+</code></pre>
+<br> 
+    几个常用的函数：  
+  
+<pre><code>    1、_IO_new_file_overflow   
+    这个函数意图比较简单，主要是处理当输出缓冲区用完时，向硬盘写入数据。当然，其实这个函数内部非常复杂，加入了一些检测。  
+
+    2、_IO_new_file_unflow      
+    这个函数与_IO_new_file_overflow差不多，主要是用于从硬盘中读取数据，每次读取都是_IO_buf_base 至 _IO_buf_end。为了防止硬盘中没有这么多数据，设置_IO_read_end为读取的总数。  
+
+    3、__GI__IO_file_read（_IO_file_read）
+    这个是输入的最终函数，它将syscall_read进行了一定的封装。
+
+    4、_IO_new_file_write 
+    这个是输出的最终函数，它将syscall_write进行了一定的封装。
+
+    5、IO_default_seekpos
+    就是调用_IO_new_file_seekoff。
+
+    6、_IO_new_file_seekoff
+    设置偏移函数，就是设置我们所说的ptr指针。
+
+    7、__GI__IO_file_xsgetn（_IO_file_xsgetn）
+    这个函数是主要目的是将数据从输入缓冲区放入target。
+    说明：我们平时的输入函数主要就是调用此函数。
+
+    8、_IO_new_file_xsputn
+    这个函数是主要目的是将数据从source放入输出输出缓冲区。
+    说明：我们平时的输出函数主要就是调用此函数。
+</code></pre>
+<hr>
+
+    </div>
+
+    
+    
+    <script src="//sdk.jinrishici.com/v2/browser/jinrishici.js"></script>
+<script>
+  jinrishici.load((result) => {
+    let jrsc = document.getElementById('jrsc');
+    const data = result.data;
+    let author = data.origin.author;
+    let title = '《' + data.origin.title + '》';
+    let content = data.content.substr(0, data.content.length - 1);
+    let dynasty = data.origin.dynasty.substr(0, data.origin.dynasty.length - 1);
+    jrsc.innerText = content + ' @ ' + dynasty + '·' + author + title;
+  });
+</script>
+<div style="text-align: center"><span id="jrsc" >正在加载今日诗词....</span></div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/pwn/" rel="tag"># pwn</a>
+              <a href="/tags/IO/" rel="tag"># IO</a>
+              <a href="/tags/ctf/" rel="tag"># ctf</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2024/07/18/bin/" rel="next" title="bin">
+      bin <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Inhaltsverzeichnis
+        </li>
+        <li class="sidebar-nav-overview">
+          Übersicht
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#IO%E7%BB%93%E6%9E%84%E4%BD%93"><span class="nav-number">1.</span> <span class="nav-text">IO结构体</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%93%E5%86%B2%E5%8C%BA"><span class="nav-number">1.1.</span> <span class="nav-text">缓冲区</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IO-FILE-plus"><span class="nav-number">1.2.</span> <span class="nav-text">IO_FILE_plus</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IO-jump-t"><span class="nav-number">1.3.</span> <span class="nav-text">_IO_jump_t</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IO-str-jumps"><span class="nav-number">1.4.</span> <span class="nav-text">IO_str_jumps</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IO-file-jumps"><span class="nav-number">1.5.</span> <span class="nav-text">IO_file_jumps</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#glibc2-24%E5%A2%9E%E5%8A%A0%E7%9A%84vtable-check"><span class="nav-number">1.5.1.</span> <span class="nav-text">glibc2.24增加的vtable_check</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Masco</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-name">Artikel</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">schlagwörter</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Masco</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="Insgesamt gezählte Symbole">22k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="Insgesamte Lesezeit">37 minuten.</span>
+</div>
+  <div class="powered-by">Erstellt mit  <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div><script color="0,0,255" opacity="0.5" zIndex="-1" count="99" src="https://lib.baomitu.com/canvas-nest.js/1.0.1/canvas-nest.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
