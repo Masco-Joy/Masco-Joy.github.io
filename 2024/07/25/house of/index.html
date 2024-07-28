@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CH">
+<html lang="zh-Hans">
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
@@ -26,13 +26,13 @@
 <meta property="og:url" content="https://masco-joy.github.io/2024/07/25/house%20of/index.html">
 <meta property="og:site_name" content="Masco&#39;s blog">
 <meta property="og:description" content="house of 利用模板及利用条件">
-<meta property="og:locale" content="zh_CH">
+<meta property="og:locale">
 <meta property="article:published_time" content="2024-07-25T01:09:09.000Z">
 <meta property="article:modified_time" content="2024-07-27T11:00:52.913Z">
 <meta property="article:author" content="Masco">
 <meta property="article:tag" content="pwn">
-<meta property="article:tag" content="IO">
 <meta property="article:tag" content="house of">
+<meta property="article:tag" content="IO">
 <meta name="twitter:card" content="summary">
 
 <link rel="canonical" href="https://masco-joy.github.io/2024/07/25/house%20of/">
@@ -44,7 +44,7 @@
     sidebar: "",
     isHome : false,
     isPost : true,
-    lang   : 'zh-CH'
+    lang   : 'zh-Hans'
   };
 </script>
 
@@ -88,7 +88,7 @@
     <header class="header" itemscope itemtype="http://schema.org/WPHeader">
       <div class="header-inner"><div class="site-brand-container">
   <div class="site-nav-toggle">
-    <div class="toggle" aria-label="Toggle navigation bar">
+    <div class="toggle" aria-label="Cambiar a barra de navegación">
       <span class="toggle-line toggle-line-first"></span>
       <span class="toggle-line toggle-line-middle"></span>
       <span class="toggle-line toggle-line-last"></span>
@@ -118,16 +118,16 @@
   <ul id="menu" class="main-menu menu">
         <li class="menu-item menu-item-home">
 
-    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Inicio</a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archivo</a>
 
   </li>
       <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Buscar
         </a>
       </li>
   </ul>
@@ -143,7 +143,7 @@
   </span>
   <div class="search-input-container">
     <input autocomplete="off" autocapitalize="off"
-           placeholder="Searching..." spellcheck="false"
+           placeholder="Buscando..." spellcheck="false"
            type="search" class="search-input">
   </div>
   <span class="popup-btn-close">
@@ -180,7 +180,7 @@
     
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CH">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
     <link itemprop="mainEntityOfPage" href="https://masco-joy.github.io/2024/07/25/house%20of/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -202,32 +202,32 @@
               <span class="post-meta-item-icon">
                 <i class="far fa-calendar"></i>
               </span>
-              <span class="post-meta-item-text">Posted on</span>
+              <span class="post-meta-item-text">Publicado el</span>
 
-              <time title="Created: 2024-07-25 09:09:09" itemprop="dateCreated datePublished" datetime="2024-07-25T09:09:09+08:00">2024-07-25</time>
+              <time title="Creado por: 2024-07-25 09:09:09" itemprop="dateCreated datePublished" datetime="2024-07-25T09:09:09+08:00">2024-07-25</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2024-07-27 19:00:52" itemprop="dateModified" datetime="2024-07-27T19:00:52+08:00">2024-07-27</time>
+                <span class="post-meta-item-text">Editado el</span>
+                <time title="Modificado por: 2024-07-27 19:00:52" itemprop="dateModified" datetime="2024-07-27T19:00:52+08:00">2024-07-27</time>
               </span>
 
           <br>
-            <span class="post-meta-item" title="Symbols count in article">
+            <span class="post-meta-item" title="Cantidad de caracteres en el articulo">
               <span class="post-meta-item-icon">
                 <i class="far fa-file-word"></i>
               </span>
-                <span class="post-meta-item-text">Symbols count in article: </span>
+                <span class="post-meta-item-text">Cantidad de caracteres en el articulo: </span>
               <span>2.6k</span>
             </span>
-            <span class="post-meta-item" title="Reading time">
+            <span class="post-meta-item" title="Tiempo de lectura">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
-                <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>4 mins.</span>
+                <span class="post-meta-item-text">Tiempo de lectura &asymp;</span>
+              <span>4 minutos.</span>
             </span>
 
         </div>
@@ -321,7 +321,7 @@ getshell
         <div class="reward-container">
   <div></div>
   <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
-    Donate
+    Donar
   </button>
   <div id="qr" style="display: none;">
 
@@ -333,14 +333,14 @@ getshell
 <div>
 <ul class="post-copyright">
   <li class="post-copyright-author">
-    <strong>Post author:  </strong>Masco
+    <strong>Autor de la entrada:  </strong>Masco
   </li>
   <li class="post-copyright-link">
-    <strong>Post link: </strong>
+    <strong>Enlace a la entrada: </strong>
     <a href="https://masco-joy.github.io/2024/07/25/house%20of/" title="house of模板">https://masco-joy.github.io/2024/07/25/house of/</a>
   </li>
   <li class="post-copyright-license">
-    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.
+    <strong>Copyright:  </strong>Todos los artículos de este blog están licenciados bajo <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> a no ser que se especifique una licencia adicional.
   </li>
 </ul>
 </div>
@@ -349,8 +349,8 @@ getshell
       <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/pwn/" rel="tag"># pwn</a>
-              <a href="/tags/IO/" rel="tag"># IO</a>
               <a href="/tags/house-of/" rel="tag"># house of</a>
+              <a href="/tags/IO/" rel="tag"># IO</a>
           </div>
 
         
@@ -412,10 +412,10 @@ getshell
 
       <ul class="sidebar-nav motion-element">
         <li class="sidebar-nav-toc">
-          Table of Contents
+          Tabla de contenidos
         </li>
         <li class="sidebar-nav-overview">
-          Overview
+          Inicio
         </li>
       </ul>
 
@@ -438,7 +438,7 @@ getshell
           <a href="/archives/">
         
           <span class="site-state-item-count">5</span>
-          <span class="site-state-item-name">posts</span>
+          <span class="site-state-item-name">entradas</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -493,14 +493,14 @@ getshell
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="Symbols count total">22k</span>
+    <span title="Cantidad total de caracteres">22k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="Reading time total">37 mins.</span>
+    <span title="Tiempo total de lectura">37 minutos.</span>
 </div>
-  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  <div class="powered-by">Creado mediante <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
   </div><script color="0,0,255" opacity="0.5" zIndex="-1" count="99" src="https://lib.baomitu.com/canvas-nest.js/1.0.1/canvas-nest.js"></script>
 
 
