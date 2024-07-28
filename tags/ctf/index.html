@@ -22,14 +22,14 @@
 
   <meta property="og:type" content="website">
 <meta property="og:title" content="Masco&#39;s blog">
-<meta property="og:url" content="https://masco-joy.github.io/tags/ctf/index.html">
+<meta property="og:url" content="https://masco-joy.github.io/tags/CTF/index.html">
 <meta property="og:site_name" content="Masco&#39;s blog">
 <meta property="og:locale" content="en_US">
 <meta property="article:author" content="Masco">
 <meta property="article:tag" content="PWN CTF">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://masco-joy.github.io/tags/ctf/">
+<link rel="canonical" href="https://masco-joy.github.io/tags/CTF/">
 
 
 <script id="page-configurations">
@@ -42,7 +42,7 @@
   };
 </script>
 
-  <title>Tag: ctf | Masco's blog</title>
+  <title>Tag: CTF | Masco's blog</title>
   
 
 
@@ -177,7 +177,7 @@
   <div class="post-block">
     <div class="posts-collapse">
       <div class="collection-title">
-        <h2 class="collection-header">ctf
+        <h2 class="collection-header">CTF
           <small>Tag</small>
         </h2>
       </div>
@@ -192,15 +192,35 @@
 
       <div class="post-meta">
         <time itemprop="dateCreated"
-              datetime="2024-07-18T20:41:15+08:00"
+              datetime="2024-07-19T21:05:10+08:00"
+              content="2024-07-19">
+          07-19
+        </time>
+      </div>
+
+      <div class="post-title">
+          <a class="post-title-link" href="/2024/07/19/IO_2_1_stdout/" itemprop="url">
+            <span itemprop="name">_IO_2_1_stdout_</span>
+          </a>
+      </div>
+
+    </header>
+  </article>
+
+  <article itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      <div class="post-meta">
+        <time itemprop="dateCreated"
+              datetime="2024-07-18T21:30:33+08:00"
               content="2024-07-18">
           07-18
         </time>
       </div>
 
       <div class="post-title">
-          <a class="post-title-link" href="/2024/07/18/IO/" itemprop="url">
-            <span itemprop="name">IO</span>
+          <a class="post-title-link" href="/2024/07/18/bin/" itemprop="url">
+            <span itemprop="name">bin</span>
           </a>
       </div>
 
@@ -271,7 +291,7 @@
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
     <img class="site-author-image" itemprop="image" alt="Masco"
-      src="/images/images/background1.png">
+      src="/images/images/background4.jpg">
   <p class="site-author-name" itemprop="name">Masco</p>
   <div class="site-description" itemprop="description"></div>
 </div>
@@ -361,6 +381,7 @@
   </div>
 
   
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
   <script src="/lib/anime.min.js"></script>
   <script src="/lib/velocity/velocity.min.js"></script>
   <script src="/lib/velocity/velocity.ui.min.js"></script>
@@ -394,6 +415,26 @@
 
 
 
+<script>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
 
 
 
