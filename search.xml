@@ -1,6 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>_IO_2_1_stdout_</title>
+    <url>/2024/07/19/IO_2_1_stdout/</url>
+    <content><![CDATA[<hr>
+<h1 id="IO-2-1-stdout-的利用（速成）"><a href="#IO-2-1-stdout-的利用（速成）" class="headerlink" title="_IO_2_1_stdout_的利用（速成）"></a>_IO_2_1_stdout_的利用（速成）</h1><span id="more"></span>
+
+<p>详情可看：<br><a href="https://blog.csdn.net/qq_41202237/article/details/113845320">hollk</a> </p>
+<p><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_2">国资</a></p>
+<h3 id="IO-FILE-plus结构体"><a href="#IO-FILE-plus结构体" class="headerlink" title="_IO_FILE_plus结构体"></a>_IO_FILE_plus结构体</h3><pre><code>struct _IO_FILE_plus &#123;
+    FILE file;
+    const struct _IO_jump_t *vtable;
+&#125;
+</code></pre>
+<p>其中32 位的file到 vtable 偏移为 0x94，64 位偏移为 0xd8</p>
+<br>
+
+<h3 id="IO-2-1-stdout-结构体"><a href="#IO-2-1-stdout-结构体" class="headerlink" title="_IO_2_1_stdout_结构体"></a>_IO_2_1_stdout_结构体</h3><p><img src="/images/stdout.png" alt="图片">   </p>
+<p>关于利用stdout来泄露libc主要设置以下结构的值：   </p>
+<pre><code>1、flag为0xfbad18xx，一般为0xfbad0000
+
+2、更改_IO_read_ptr、_IO_read_end、_IO_read_base指针的值为0.
+
+3、_IO_write_base改为需要泄露的地址，_IO_write_ptr改为泄露地址的终止值。
+</code></pre>
+<p>改完了这些，就可以通过调用printf或者puts函数来打印出地址了。</p>
+<hr>
+]]></content>
+      <tags>
+        <tag>pwn</tag>
+        <tag>IO</tag>
+        <tag>CTF</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>format利用</title>
     <url>/2024/07/20/Fmt/</url>
     <content><![CDATA[<hr>
@@ -133,39 +166,6 @@ inter()
       <tags>
         <tag>pwn</tag>
         <tag>fmt</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>_IO_2_1_stdout_</title>
-    <url>/2024/07/19/IO_2_1_stdout/</url>
-    <content><![CDATA[<hr>
-<h1 id="IO-2-1-stdout-的利用（速成）"><a href="#IO-2-1-stdout-的利用（速成）" class="headerlink" title="_IO_2_1_stdout_的利用（速成）"></a>_IO_2_1_stdout_的利用（速成）</h1><span id="more"></span>
-
-<p>详情可看：<br><a href="https://blog.csdn.net/qq_41202237/article/details/113845320">hollk</a> </p>
-<p><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_2">国资</a></p>
-<h3 id="IO-FILE-plus结构体"><a href="#IO-FILE-plus结构体" class="headerlink" title="_IO_FILE_plus结构体"></a>_IO_FILE_plus结构体</h3><pre><code>struct _IO_FILE_plus &#123;
-    FILE file;
-    const struct _IO_jump_t *vtable;
-&#125;
-</code></pre>
-<p>其中32 位的file到 vtable 偏移为 0x94，64 位偏移为 0xd8</p>
-<br>
-
-<h3 id="IO-2-1-stdout-结构体"><a href="#IO-2-1-stdout-结构体" class="headerlink" title="_IO_2_1_stdout_结构体"></a>_IO_2_1_stdout_结构体</h3><p><img src="/images/stdout.png" alt="图片">   </p>
-<p>关于利用stdout来泄露libc主要设置以下结构的值：   </p>
-<pre><code>1、flag为0xfbad18xx，一般为0xfbad0000
-
-2、更改_IO_read_ptr、_IO_read_end、_IO_read_base指针的值为0.
-
-3、_IO_write_base改为需要泄露的地址，_IO_write_ptr改为泄露地址的终止值。
-</code></pre>
-<p>改完了这些，就可以通过调用printf或者puts函数来打印出地址了。</p>
-<hr>
-]]></content>
-      <tags>
-        <tag>pwn</tag>
-        <tag>IO</tag>
-        <tag>CTF</tag>
       </tags>
   </entry>
   <entry>
