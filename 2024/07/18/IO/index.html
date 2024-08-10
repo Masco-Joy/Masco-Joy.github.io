@@ -20,15 +20,15 @@
     var CONFIG = {"hostname":"masco-joy.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="IO结构体">
+  <meta name="description" content="IO结构体关于IO_file_jumps中函数的具体作用可以参考以下两个博客国资和ray-cp 或者星盟的也可以          缓冲区引入原因： 对于LBA硬盘来说，读写数据都必须一块一块的读，如果我们每次执行read，write时都是操作很少的数据，则对系统消耗非常大，因此，C库就想了一个好办法——缓冲区。    1、输入缓冲区    从外部硬件读取时。为了减少消耗，会一次从外部硬件读取一">
 <meta property="og:type" content="article">
 <meta property="og:title" content="IO">
 <meta property="og:url" content="https://masco-joy.github.io/2024/07/18/IO/index.html">
 <meta property="og:site_name" content="Masco&#39;s blog">
-<meta property="og:description" content="IO结构体">
+<meta property="og:description" content="IO结构体关于IO_file_jumps中函数的具体作用可以参考以下两个博客国资和ray-cp 或者星盟的也可以          缓冲区引入原因： 对于LBA硬盘来说，读写数据都必须一块一块的读，如果我们每次执行read，write时都是操作很少的数据，则对系统消耗非常大，因此，C库就想了一个好办法——缓冲区。    1、输入缓冲区    从外部硬件读取时。为了减少消耗，会一次从外部硬件读取一">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2024-07-18T12:41:15.000Z">
-<meta property="article:modified_time" content="2024-07-25T09:19:59.335Z">
+<meta property="article:modified_time" content="2024-08-04T03:46:21.846Z">
 <meta property="article:author" content="Masco">
 <meta property="article:tag" content="pwn">
 <meta property="article:tag" content="IO">
@@ -212,7 +212,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2024-07-25 17:19:59" itemprop="dateModified" datetime="2024-07-25T17:19:59+08:00">2024-07-25</time>
+                <time title="Modified: 2024-08-04 11:46:21" itemprop="dateModified" datetime="2024-08-04T11:46:21+08:00">2024-08-04</time>
               </span>
 
           <br>
@@ -221,14 +221,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>5.4k</span>
+              <span>6.1k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>9 mins.</span>
+              <span>10 mins.</span>
             </span>
 
         </div>
@@ -241,8 +241,7 @@
 
       
         <hr>
-<h1 id="IO结构体"><a href="#IO结构体" class="headerlink" title="IO结构体"></a><strong>IO结构体</strong></h1> <span id="more"></span>                                                                                 
-<p>关于IO_file_jumps中函数的具体作用可以参考以下两个博客<br><a target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">国资</a>和<a target="_blank" rel="noopener" href="https://ray-cp.github.io/">ray-cp</a> 或者星盟的也可以      </p>
+<h1 id="IO结构体"><a href="#IO结构体" class="headerlink" title="IO结构体"></a><strong>IO结构体</strong></h1><p>关于IO_file_jumps中函数的具体作用可以参考以下两个博客<br><a target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">国资</a>和<a target="_blank" rel="noopener" href="https://ray-cp.github.io/">ray-cp</a> 或者星盟的也可以      </p>
 <br>
 <br>
 
@@ -409,7 +408,14 @@ __imbue = 0x7ffff7c96f90 &lt;_IO_default_imbue&gt;
 </code></pre>
   <br>
 
-<h3 id="glibc2-24增加的vtable-check"><a href="#glibc2-24增加的vtable-check" class="headerlink" title="glibc2.24增加的vtable_check"></a>glibc2.24增加的vtable_check</h3><pre><code>void _IO_vtable_check (void) attribute_hidden;
+<h3 id="glibc2-24增加的vtable-check"><a href="#glibc2-24增加的vtable-check" class="headerlink" title="glibc2.24增加的vtable_check"></a>glibc2.24增加的vtable_check</h3><pre><code>2.23 的没有任何限制，可以将vtable 劫持在堆上并修改其内容，然后触发FSOP.   
+
+2.24 引入了vtable check，使得将vtable 整体劫持到堆上已不可能，大佬发现可以使用内部的vtable中_IO_str_jumps或_IO_wstr_jumps来进行利用。   
+
+2.31 中将_IO_str_finish函数中强制执行free函数，导致无法使用上述问题，因而催生出其他调用链。
+
+
+void _IO_vtable_check (void) attribute_hidden;
 static inline const struct _IO_jump_t *
 IO_validate_vtable (const struct _IO_jump_t *vtable)
 &#123;
@@ -419,8 +425,29 @@ uintptr_t offset = ptr -(uintptr_t)__start___libc_IO_vtables;
 if (__glibc_unlikely (offset &gt;= section_length))
     _IO_vtable_check ();
 return vtable;
-&#125;    
+&#125;     
 </code></pre>
+<h4 id="虚表范围-glibc2-37之前"><a href="#虚表范围-glibc2-37之前" class="headerlink" title="虚表范围-glibc2.37之前"></a>虚表范围-glibc2.37之前</h4><p>虚表位置判断主要在IO_validate_vtable函数，2.37以前判断区间为_IO_helper_jumps - _IO_str_jumps之间的区域 0xd60，里面有以下虚表。</p>
+<pre><code>_IO_helper_jumps
+_IO_helper_jumps
+_IO_cookie_jumps
+_IO_proc_jumps
+_IO_str_chk_jumps
+_IO_wstrn_jumps
+_IO_wstr_jumps
+_IO_wfile_jumps_maybe_mmap
+_IO_wfile_jumps_mmap
+__GI__IO_wfile_jumps
+_IO_wmem_jumps
+_IO_mem_jumps
+_IO_strn_jumps
+_IO_obstack_jumps
+_IO_file_jumps_maybe_mmap
+_IO_file_jumps_mmap
+__GI__IO_file_jumps
+_IO_str_jumps
+</code></pre>
+<p>之后居然还有虚表check绕过<br>详情：<br><a target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3</a></p>
 <br> 
     几个常用的函数：  
   
@@ -578,7 +605,7 @@ return vtable;
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#IO%E7%BB%93%E6%9E%84%E4%BD%93"><span class="nav-number">1.</span> <span class="nav-text">IO结构体</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%93%E5%86%B2%E5%8C%BA"><span class="nav-number">1.1.</span> <span class="nav-text">缓冲区</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IO-FILE-plus"><span class="nav-number">1.2.</span> <span class="nav-text">IO_FILE_plus</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IO-jump-t"><span class="nav-number">1.3.</span> <span class="nav-text">_IO_jump_t</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IO-str-jumps"><span class="nav-number">1.4.</span> <span class="nav-text">IO_str_jumps</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IO-file-jumps"><span class="nav-number">1.5.</span> <span class="nav-text">IO_file_jumps</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#glibc2-24%E5%A2%9E%E5%8A%A0%E7%9A%84vtable-check"><span class="nav-number">1.5.1.</span> <span class="nav-text">glibc2.24增加的vtable_check</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#IO%E7%BB%93%E6%9E%84%E4%BD%93"><span class="nav-number">1.</span> <span class="nav-text">IO结构体</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%93%E5%86%B2%E5%8C%BA"><span class="nav-number">1.1.</span> <span class="nav-text">缓冲区</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IO-FILE-plus"><span class="nav-number">1.2.</span> <span class="nav-text">IO_FILE_plus</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IO-jump-t"><span class="nav-number">1.3.</span> <span class="nav-text">_IO_jump_t</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IO-str-jumps"><span class="nav-number">1.4.</span> <span class="nav-text">IO_str_jumps</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IO-file-jumps"><span class="nav-number">1.5.</span> <span class="nav-text">IO_file_jumps</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#glibc2-24%E5%A2%9E%E5%8A%A0%E7%9A%84vtable-check"><span class="nav-number">1.5.1.</span> <span class="nav-text">glibc2.24增加的vtable_check</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%99%9A%E8%A1%A8%E8%8C%83%E5%9B%B4-glibc2-37%E4%B9%8B%E5%89%8D"><span class="nav-number">1.5.1.1.</span> <span class="nav-text">虚表范围-glibc2.37之前</span></a></li></ol></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -594,12 +621,12 @@ return vtable;
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-count">6</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
-        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-count">8</span>
         <span class="site-state-item-name">tags</span>
       </div>
   </nav>
@@ -650,12 +677,12 @@ return vtable;
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="Symbols count total">25k</span>
+    <span title="Symbols count total">28k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="Reading time total">42 mins.</span>
+    <span title="Reading time total">47 mins.</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
   </div><script color="0,0,255" opacity="0.5" zIndex="-1" count="99" src="https://lib.baomitu.com/canvas-nest.js/1.0.1/canvas-nest.js"></script>

