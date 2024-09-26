@@ -31,8 +31,10 @@
 <meta property="og:image" content="https://masco-joy.github.io/images/List/2.png">
 <meta property="og:image" content="https://masco-joy.github.io/images/List/3.png">
 <meta property="og:image" content="https://masco-joy.github.io/images/List/4.png">
+<meta property="og:image" content="https://masco-joy.github.io/images/queue/1.png">
+<meta property="og:image" content="https://masco-joy.github.io/images/queue/2.png">
 <meta property="article:published_time" content="2024-09-26T11:36:14.000Z">
-<meta property="article:modified_time" content="2024-09-26T12:28:13.841Z">
+<meta property="article:modified_time" content="2024-09-26T13:33:51.953Z">
 <meta property="article:author" content="Masco">
 <meta property="article:tag" content="Data_Structure">
 <meta name="twitter:card" content="summary">
@@ -209,7 +211,7 @@
               <span class="post-meta-item-text">Posted on</span>
               
 
-              <time title="Created: 2024-09-26 19:36:14 / Modified: 20:28:13" itemprop="dateCreated datePublished" datetime="2024-09-26T19:36:14+08:00">2024-09-26</time>
+              <time title="Created: 2024-09-26 19:36:14 / Modified: 21:33:51" itemprop="dateCreated datePublished" datetime="2024-09-26T19:36:14+08:00">2024-09-26</time>
             </span>
 
           <br>
@@ -218,14 +220,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">Symbols count in article: </span>
-              <span>1.3k</span>
+              <span>6.3k</span>
             </span>
             <span class="post-meta-item" title="Reading time">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">Reading time &asymp;</span>
-              <span>2 mins.</span>
+              <span>10 mins.</span>
             </span>
 
         </div>
@@ -249,6 +251,7 @@ int i;
 L=(LinkNode *)malloc(sizeof(LinkNode));  //创建头结点
 r=L;				//r始终指向尾结点，开始时指向头结点   
 </code></pre>
+<p>   for (i&#x3D;0;i&lt;n;i++)		&#x2F;&#x2F;循环建立数据结点<br>   {	s&#x3D;(LinkNode *)malloc(sizeof(LinkNode));<br>    s-&gt;data&#x3D;a[i];		&#x2F;&#x2F;创建数据结点s<br>    r-&gt;next&#x3D;s;		&#x2F;&#x2F;将s插入r之后<br>    r&#x3D;s;<br>   }<br>   r-&gt;next&#x3D;NULL;		&#x2F;&#x2F;尾结点next域置为NULL<br>}</p>
 <br>
 
 <h3 id="头插法"><a href="#头插法" class="headerlink" title="头插法"></a>头插法</h3><pre><code>void CreateListF(LinkNode *&amp;L，ElemType a[]，int n)
@@ -298,7 +301,282 @@ for (i=0;i&lt;n;i++)		//循环建立数据结点
 &#125;
 </code></pre>
 <p><img src="/images/List/3.png" alt="图片"><br><img src="/images/List/4.png" alt="图片"><br><br></p>
+<h2 id="Stack-Queue"><a href="#Stack-Queue" class="headerlink" title="Stack&amp;&amp;Queue"></a>Stack&amp;&amp;Queue</h2><h3 id="1、Stack"><a href="#1、Stack" class="headerlink" title="1、Stack"></a>1、Stack</h3><br>
 
+<h3 id="顺序表"><a href="#顺序表" class="headerlink" title="顺序表"></a>顺序表</h3><p>(1)Init</p>
+<pre><code>void InitStack(SqStack *&amp;s)
+&#123;  s=(SqStack *)malloc(sizeof(SqStack));
+s-&gt;top=-1;
+&#125;
+</code></pre>
+<br>
+
+<p>(2)Destroy</p>
+<pre><code>void DestroyStack(SqStack *&amp;s)
+&#123;
+　　free(s);
+s=NULL;
+&#125;
+</code></pre>
+<p>(3)Empt</p>
+<pre><code>bool StackEmpty(SqStack *s)
+&#123;
+　　return(s-&gt;top==-1);
+&#125;
+</code></pre>
+<p>(4)push</p>
+<pre><code>bool Push(SqStack *&amp;s，ElemType e)
+&#123;  if (s-&gt;top==MaxSize-1) 	//栈满的情况，即栈上溢出
+    return false;
+s-&gt;top++;		   	//栈顶指针增1
+s-&gt;data[s-&gt;top]=e;	   	//元素e放在栈顶指针处
+return true;
+&#125;
+</code></pre>
+<p>(5)pop</p>
+<pre><code>bool Pop(SqStack *&amp;s，ElemType &amp;e)
+&#123;  if (s-&gt;top==-1)		//栈为空的情况，即栈下溢出
+    return false;
+e=s-&gt;data[s-&gt;top];		//取栈顶指针元素的元素
+s-&gt;top--;			//栈顶指针减1
+return true;
+&#125;
+</code></pre>
+<p>(6)GetTop</p>
+<pre><code>bool GetTop(SqStack *s，ElemType &amp;e)
+&#123;   if (s-&gt;top==-1)	   	//栈为空的情况，即栈下溢出            
+    return false;
+    e=s-&gt;data[s-&gt;top];   	//取栈顶指针元素的元素
+    return true;
+&#125;
+</code></pre>
+<br>
+
+<h3 id="链式"><a href="#链式" class="headerlink" title="链式"></a>链式</h3><p>（1）初始化栈initStack(&amp;s)<br>      建立一个空栈s。实际上是创建链栈的头结点，并将其next域置为NULL。</p>
+<pre><code>void InitStack(LinkStNode *&amp;s)
+&#123;  s=(LinkStNode *)malloc(sizeof(LinkStNode)); 
+s-&gt;next=NULL;
+&#125;
+</code></pre>
+<p>（2）销毁栈DestroyStack(&amp;s)<br>     释放栈s占用的全部存储空间。</p>
+<pre><code>void DestroyStack(LinkStNode *&amp;s)
+&#123;　 LinkStNode *p=s，*q=s-&gt;next;
+    while (q!=NULL)
+    &#123;	free(p);
+    p=q;
+    q=p-&gt;next;
+    &#125;
+    free(p);	//此时p指向尾结点，释放其空间
+&#125;
+</code></pre>
+<p>（3）判断栈是否为空StackEmpty(s)<br>     栈S为空的条件是s-&gt;next&#x3D;&#x3D;NULL，即单链表中没有数据结点。</p>
+<pre><code>bool StackEmpty(LinkStNode *s)
+&#123;
+    return(s-&gt;next==NULL);
+&#125;
+</code></pre>
+<p>（4）进栈Push(&amp;s，e)<br>    将新数据结点插入到头结点之后。</p>
+<pre><code>void Push(LinkStNode *&amp;s，ElemType e)
+&#123;  LinkStNode *p;
+p=(LinkStNode *)malloc(sizeof(LinkStNode));
+p-&gt;data=e;		//新建元素e对应的结点p
+p-&gt;next=s-&gt;next;	//插入p结点作为开始结点
+s-&gt;next=p;
+&#125;
+</code></pre>
+<p>（5）出栈Pop(&amp;s，&amp;e)<br>     栈非空时，将头结点后继数据结点的数据域赋给e，然后将其删除。</p>
+<pre><code>bool Pop(LinkStNode *&amp;s，ElemType &amp;e)
+&#123;  LinkStNode *p;
+if (s-&gt;next==NULL)		//栈空的情况
+    return false;
+p=s-&gt;next;			//p指向开始结点
+e=p-&gt;data;
+s-&gt;next=p-&gt;next;		//删除p结点
+free(p);			//释放p结点
+return true;
+&#125;
+</code></pre>
+<p>（6）取栈顶元素GetTop(s，e)<br>     在栈不为空的条件下，将头结点后继数据结点的数据域赋给e。</p>
+<pre><code>bool GetTop(LinkStNode *s，ElemType &amp;e)
+&#123;  if (s-&gt;next==NULL)		//栈空的情况
+    return false;
+e=s-&gt;next-&gt;data;
+return true;
+&#125;
+</code></pre>
+<br>
+
+<h3 id="2、Queue"><a href="#2、Queue" class="headerlink" title="2、Queue"></a>2、Queue</h3><h3 id="顺序表-循环队列"><a href="#顺序表-循环队列" class="headerlink" title="顺序表&amp;&amp;循环队列"></a>顺序表&amp;&amp;循环队列</h3><p>（1）初始化队列InitQueue(q)<br>   构造一个空队列q。将front和rear指针均设置成初始状态即-1值。</p>
+<pre><code>void InitQueue(SqQueue *&amp;q)
+&#123;  q=(SqQueue *)malloc (sizeof(SqQueue));
+　 q-&gt;front=q-&gt;rear=-1;
+&#125;
+</code></pre>
+<br>
+（2）销毁队列DestroyQueue(q)
+     释放队列q占用的存储空间。
+
+<pre><code>void DestroyQueue(SqQueue *&amp;q)
+&#123;
+    free(q);
+&#125;
+</code></pre>
+<br>
+（3）判断队列是否为空QueueEmpty(q)
+     若队列q满足q->front==q->rear条件，则返回true；否则返回false。
+
+<pre><code>bool QueueEmpty(SqQueue *q)
+&#123;
+    return(q-&gt;front==q-&gt;rear);
+&#125;
+</code></pre>
+<br>
+（4）进队列enQueue(q，e) 
+    在队列不满的条件下，先将队尾指针rear循环增1，然后将元素添加到该位置。
+
+<pre><code>bool enQueue(SqQueue *&amp;q，ElemType e)
+&#123;   if (q-&gt;rear==MaxSize-1)		//队满上溢出
+    return false;
+    q-&gt;rear++;
+    q-&gt;data[q-&gt;rear]=e;
+    return true;
+&#125;
+</code></pre>
+<br>
+
+<p>（5）出队列deQueue(q，e)<br>   在队列q不为空的条件下，将队首指针front循环增1，并将该位置的元素值赋给e。</p>
+<pre><code>bool deQueue(SqQueue *&amp;q，ElemType &amp;e)
+&#123;   if (q-&gt;front==q-&gt;rear)　　	//队空下溢出
+    return false;
+    q-&gt;front++;
+    e=q-&gt;data[q-&gt;front];
+    return true;
+&#125;
+</code></pre>
+<br>
+
+<h3 id="环形队列"><a href="#环形队列" class="headerlink" title="环形队列"></a>环形队列</h3><p>环形队列这辈子一定要守护的四个条件：</p>
+<pre><code>队空条件：front = rear
+队满条件：(rear+1)%MaxSize = front
+进队e操作：rear=(rear+1)%MaxSize;  将e放在rear处
+出队操作：front=(front+1)%MaxSize; 取出front处元素e; 
+</code></pre>
+<p><img src="/images/queue/1.png" alt="图片"></p>
+<p>实现</p>
+<pre><code>void InitQueue(QuType *&amp;qu)	//初始化队运算算法
+&#123;  qu=(QuType *)malloc(sizeof(QuType));
+qu-&gt;front=0;
+qu-&gt;count=0;
+&#125;
+
+
+
+bool EnQueue(QuType *&amp;qu，ElemType x)   	//进队运算算法
+&#123;  int rear;		      	  		//临时队尾指针
+if (qu-&gt;count==MaxSize)	  		//队满上溢出
+    return false;
+else
+&#123;  rear=(qu-&gt;front+qu-&gt;count)%MaxSize;	//求队尾位置
+    rear=(rear+1)%MaxSize;  		//队尾循环增1
+    qu-&gt;data[rear]=x;
+    qu-&gt;count++;		 		//元素个数增1
+    return true;
+&#125;
+&#125;
+
+
+
+bool DeQueue(QuType *&amp;qu，ElemType &amp;x)  	//出队运算算法
+&#123;  if (qu-&gt;count==0)		         	//队空下溢出
+    return false;
+else
+&#123;	qu-&gt;front=(qu-&gt;front+1)%MaxSize; 	//队头循环增1
+    x=qu-&gt;data[qu-&gt;front];
+    qu-&gt;count--;			 	//元素个数减1
+    return true;
+&#125;
+&#125;
+
+
+bool QueueEmpty(QuType *qu)	   //判队空运算算法
+&#123;
+    return(qu-&gt;count==0);
+&#125;
+</code></pre>
+<br>
+
+<h3 id="链式-1"><a href="#链式-1" class="headerlink" title="链式"></a>链式</h3><p>链队这辈子一定要守护的四个条件：</p>
+<pre><code>队空条件：front=rear=NULL
+队满条件：不考虑
+进队e操作：将包含e的结点插入到单链表表尾
+出队操作：删除单链表首数据结点
+</code></pre>
+<p><img src="/images/queue/2.png" alt="图片"><br>  （1）初始化队列InitQueue(q)<br>   构造一个空队列，即只创建一个链队头结点，其front和rear域均置为NULL，不创建数据元素结点。</p>
+<pre><code>void InitQueue(LinkQuNode *&amp;q)
+&#123;  q=(LinkQuNode *)malloc(sizeof(LinkQuNode));
+q-&gt;front=q-&gt;rear=NULL;
+&#125;
+</code></pre>
+<p> （2）销毁队列DestroyQueue(q)<br>释放队列占用的存储空间，包括链队头结点和所有数据结点的存储空间。</p>
+<pre><code>void DestroyQueue(LinkQuNode *&amp;q)
+&#123;  DataNode *p=q-&gt;front，*r;  	//p指向队头数据结点
+if  (p!=NULL)			//释放数据结点占用空间
+&#123;  r=p-&gt;next;
+    while (r!=NULL)
+    &#123;  free(p);
+    p=r;r=p-&gt;next;
+    &#125;
+&#125;
+free(p);  free(q);		 	//释放链队结点占用空间
+&#125;
+</code></pre>
+<p>（3）判断队列是否为空QueueEmpty(q)</p>
+<pre><code>    若链队结点的rear域值为NULL，表示队列为空，返回true；否则返回false。
+bool QueueEmpty(LinkQuNode *q)
+&#123;
+　　return(q-&gt;rear==NULL);
+&#125;
+</code></pre>
+<p>（4）进队enQueue(q，e)<br>两种情况   </p>
+<pre><code>原队列为空
+原队列非空
+</code></pre>
+<br>
+
+<pre><code>    void enQueue(LinkQuNode *&amp;q，ElemType e)
+    &#123;  DataNode *p;
+    p=(DataNode *)malloc(sizeof(DataNode));
+    p-&gt;data=e;
+    p-&gt;next=NULL;
+    if (q-&gt;rear==NULL)   //若链队为空，新结点是队首结点又是队尾结点
+        q-&gt;front=q-&gt;rear=p;
+    else
+    &#123;   q-&gt;rear-&gt;next=p; //将p结点链到队尾，并将rear指向它
+        q-&gt;rear=p;
+    &#125;
+    &#125;
+</code></pre>
+<p> （5）出队deQueue(q，e)<br> 三种情况</p>
+<pre><code>原队列为空
+原队列只有一个结点
+其他情况
+</code></pre>
+<br>
+
+<pre><code>bool deQueue(LinkQuNode *&amp;q，ElemType &amp;e)
+&#123;  DataNode *t;
+if (q-&gt;rear==NULL) return false;	//队列为空
+t=q-&gt;front;		   		//t指向第一个数据结点
+if (q-&gt;front==q-&gt;rear)  		//队列中只有一个结点时
+    q-&gt;front=q-&gt;rear=NULL;
+else			   		//队列中有多个结点时
+    q-&gt;front=q-&gt;front-&gt;next;
+e=t-&gt;data;
+free(t);
+return true;
+&#125;
+</code></pre>
+<h3 id="3、双端队列"><a href="#3、双端队列" class="headerlink" title="3、双端队列"></a>3、双端队列</h3>
     </div>
 
     
@@ -423,7 +701,7 @@ for (i=0;i&lt;n;i++)		//循环建立数据结点
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Data-Structure"><span class="nav-number">1.</span> <span class="nav-text">Data_Structure</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Data-List"><span class="nav-number">2.</span> <span class="nav-text">Data_List</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#List-Create"><span class="nav-number">2.1.</span> <span class="nav-text">List_Create</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1%E3%80%81%E5%8D%95%E9%93%BE%E8%A1%A8-%E5%BE%AA%E7%8E%AF%E5%8D%95%E9%93%BE%E8%A1%A8"><span class="nav-number">2.2.</span> <span class="nav-text">1、单链表&amp;&amp;循环单链表</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%BE%E6%8F%92%E6%B3%95"><span class="nav-number">2.2.1.</span> <span class="nav-text">尾插法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%B4%E6%8F%92%E6%B3%95"><span class="nav-number">2.2.2.</span> <span class="nav-text">头插法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2%E3%80%81%E5%8F%8C%E9%93%BE%E8%A1%A8-%E5%BE%AA%E7%8E%AF%E5%8F%8C%E9%93%BE%E8%A1%A8"><span class="nav-number">2.3.</span> <span class="nav-text">2、双链表&amp;&amp;循环双链表</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%BE%E6%8F%92%E6%B3%95-1"><span class="nav-number">2.3.1.</span> <span class="nav-text">尾插法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%B4%E6%8F%92%E6%B3%95-1"><span class="nav-number">2.3.2.</span> <span class="nav-text">头插法</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Data-Structure"><span class="nav-number">1.</span> <span class="nav-text">Data_Structure</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Data-List"><span class="nav-number">2.</span> <span class="nav-text">Data_List</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#List-Create"><span class="nav-number">2.1.</span> <span class="nav-text">List_Create</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1%E3%80%81%E5%8D%95%E9%93%BE%E8%A1%A8-%E5%BE%AA%E7%8E%AF%E5%8D%95%E9%93%BE%E8%A1%A8"><span class="nav-number">2.2.</span> <span class="nav-text">1、单链表&amp;&amp;循环单链表</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%BE%E6%8F%92%E6%B3%95"><span class="nav-number">2.2.1.</span> <span class="nav-text">尾插法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%B4%E6%8F%92%E6%B3%95"><span class="nav-number">2.2.2.</span> <span class="nav-text">头插法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2%E3%80%81%E5%8F%8C%E9%93%BE%E8%A1%A8-%E5%BE%AA%E7%8E%AF%E5%8F%8C%E9%93%BE%E8%A1%A8"><span class="nav-number">2.3.</span> <span class="nav-text">2、双链表&amp;&amp;循环双链表</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%BE%E6%8F%92%E6%B3%95-1"><span class="nav-number">2.3.1.</span> <span class="nav-text">尾插法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%B4%E6%8F%92%E6%B3%95-1"><span class="nav-number">2.3.2.</span> <span class="nav-text">头插法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Stack-Queue"><span class="nav-number">2.4.</span> <span class="nav-text">Stack&amp;&amp;Queue</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81Stack"><span class="nav-number">2.4.1.</span> <span class="nav-text">1、Stack</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%BA%E5%BA%8F%E8%A1%A8"><span class="nav-number">2.4.2.</span> <span class="nav-text">顺序表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%93%BE%E5%BC%8F"><span class="nav-number">2.4.3.</span> <span class="nav-text">链式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81Queue"><span class="nav-number">2.4.4.</span> <span class="nav-text">2、Queue</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%BA%E5%BA%8F%E8%A1%A8-%E5%BE%AA%E7%8E%AF%E9%98%9F%E5%88%97"><span class="nav-number">2.4.5.</span> <span class="nav-text">顺序表&amp;&amp;循环队列</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8E%AF%E5%BD%A2%E9%98%9F%E5%88%97"><span class="nav-number">2.4.6.</span> <span class="nav-text">环形队列</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%93%BE%E5%BC%8F-1"><span class="nav-number">2.4.7.</span> <span class="nav-text">链式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3%E3%80%81%E5%8F%8C%E7%AB%AF%E9%98%9F%E5%88%97"><span class="nav-number">2.4.8.</span> <span class="nav-text">3、双端队列</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -495,12 +773,12 @@ for (i=0;i&lt;n;i++)		//循环建立数据结点
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="Symbols count total">35k</span>
+    <span title="Symbols count total">40k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="Reading time total">58 mins.</span>
+    <span title="Reading time total">1:06</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
   </div><script color="0,0,255" opacity="0.5" zIndex="-1" count="99" src="https://lib.baomitu.com/canvas-nest.js/1.0.1/canvas-nest.js"></script>
