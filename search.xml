@@ -5,9 +5,10 @@
     <url>/2024/09/26/Data-Structure/</url>
     <content><![CDATA[<h1 id="Data-Structure"><a href="#Data-Structure" class="headerlink" title="Data_Structure"></a>Data_Structure</h1><span id="more"></span>
 
-<h1 id="Data-List"><a href="#Data-List" class="headerlink" title="Data_List"></a>Data_List</h1><br>
+<h2 id="没有技巧，全是粘贴"><a href="#没有技巧，全是粘贴" class="headerlink" title="没有技巧，全是粘贴"></a><strong><em>没有技巧，全是粘贴</em></strong></h2><h1 id="Data-List"><a href="#Data-List" class="headerlink" title="Data_List"></a>Data_List</h1><br>
 
-<p><strong><em>没有技巧，全是粘贴</em></strong><br><br></p>
+
+
 <h2 id="List-Create"><a href="#List-Create" class="headerlink" title="List_Create"></a>List_Create</h2><h2 id="1、单链表-循环单链表"><a href="#1、单链表-循环单链表" class="headerlink" title="1、单链表&amp;&amp;循环单链表"></a>1、单链表&amp;&amp;循环单链表</h2><br>
 
 <h3 id="尾插法"><a href="#尾插法" class="headerlink" title="尾插法"></a>尾插法</h3><pre><code>void CreateListR(LinkNode *&amp;L，ElemType a[]，int n)
@@ -66,7 +67,7 @@ for (i=0;i&lt;n;i++)		//循环建立数据结点
 &#125;
 </code></pre>
 <p><img src="/images/List/3.png" alt="图片"><br><img src="/images/List/4.png" alt="图片"><br><br></p>
-<h2 id="Stack-Queue"><a href="#Stack-Queue" class="headerlink" title="Stack&amp;&amp;Queue"></a>Stack&amp;&amp;Queue</h2><h2 id="1、Stack"><a href="#1、Stack" class="headerlink" title="1、Stack"></a>1、Stack</h2><br>
+<h2 id="Stack-Queue"><a href="#Stack-Queue" class="headerlink" title="Stack&amp;&amp;Queue"></a>Stack&amp;&amp;Queue</h2><h3 id="1、Stack"><a href="#1、Stack" class="headerlink" title="1、Stack"></a>1、Stack</h3><br>
 
 <h3 id="顺序表"><a href="#顺序表" class="headerlink" title="顺序表"></a>顺序表</h3><p>(1)Init</p>
 <pre><code>void InitStack(SqStack *&amp;s)
@@ -171,7 +172,7 @@ return true;
 </code></pre>
 <br>
 
-<h2 id="2、Queue"><a href="#2、Queue" class="headerlink" title="2、Queue"></a>2、Queue</h2><h3 id="顺序表-循环队列"><a href="#顺序表-循环队列" class="headerlink" title="顺序表&amp;&amp;循环队列"></a>顺序表&amp;&amp;循环队列</h3><p>（1）初始化队列InitQueue(q)<br>   构造一个空队列q。将front和rear指针均设置成初始状态即-1值。</p>
+<h3 id="2、Queue"><a href="#2、Queue" class="headerlink" title="2、Queue"></a>2、Queue</h3><h3 id="顺序表-循环队列"><a href="#顺序表-循环队列" class="headerlink" title="顺序表&amp;&amp;循环队列"></a>顺序表&amp;&amp;循环队列</h3><p>（1）初始化队列InitQueue(q)<br>   构造一个空队列q。将front和rear指针均设置成初始状态即-1值。</p>
 <pre><code>void InitQueue(SqQueue *&amp;q)
 &#123;  q=(SqQueue *)malloc (sizeof(SqQueue));
 　 q-&gt;front=q-&gt;rear=-1;
