@@ -10,7 +10,7 @@
 <p> <strong><em> 没有技巧，全是粘贴<br> NO SKILLS，ALL PASTING<br></em></strong></p>
 <br>
 
-<h2 id="1、Link-List"><a href="#1、Link-List" class="headerlink" title="1、Link_List"></a>1、Link_List</h2><br>
+<h1 id="1、Link-List"><a href="#1、Link-List" class="headerlink" title="1、Link_List"></a>1、Link_List</h1><br>
 
 <h2 id="1、单链表-循环单链表"><a href="#1、单链表-循环单链表" class="headerlink" title="1、单链表&amp;&amp;循环单链表"></a>1、单链表&amp;&amp;循环单链表</h2><br>
 
@@ -70,7 +70,7 @@ for (i=0;i&lt;n;i++)		//循环建立数据结点
 &#125;
 </code></pre>
 <p><img src="/images/List/3.png" alt="图片"><br><img src="/images/List/4.png" alt="图片"><br><br></p>
-<h2 id="2、Stack-Queue"><a href="#2、Stack-Queue" class="headerlink" title="2、Stack&amp;&amp;Queue"></a>2、Stack&amp;&amp;Queue</h2><h3 id="1、Stack"><a href="#1、Stack" class="headerlink" title="1、Stack"></a>1、Stack</h3><br>
+<h1 id="2、Stack-Queue"><a href="#2、Stack-Queue" class="headerlink" title="2、Stack&amp;&amp;Queue"></a>2、Stack&amp;&amp;Queue</h1><h3 id="1、Stack"><a href="#1、Stack" class="headerlink" title="1、Stack"></a>1、Stack</h3><br>
 
 <h3 id="顺序表"><a href="#顺序表" class="headerlink" title="顺序表"></a>顺序表</h3><p>(1)Init</p>
 <pre><code>void InitStack(SqStack *&amp;s)
@@ -345,7 +345,7 @@ free(t);
 return true;
 &#125;
 </code></pre>
-<h3 id="3、双端队列"><a href="#3、双端队列" class="headerlink" title="3、双端队列"></a>3、双端队列</h3><h2 id="4、String"><a href="#4、String" class="headerlink" title="4、String"></a>4、String</h2><h3 id="BP算法"><a href="#BP算法" class="headerlink" title="BP算法"></a>BP算法</h3><p>字符串匹配，暴力求解时间复杂度<strong>S(n*m)</strong><br><br></p>
+<h3 id="3、双端队列"><a href="#3、双端队列" class="headerlink" title="3、双端队列"></a>3、双端队列</h3><h1 id="4、String"><a href="#4、String" class="headerlink" title="4、String"></a>4、String</h1><h3 id="BP算法"><a href="#BP算法" class="headerlink" title="BP算法"></a>BP算法</h3><p>字符串匹配，暴力求解时间复杂度<strong>S(n*m)</strong><br><br></p>
 <h3 id="KMP算法"><a href="#KMP算法" class="headerlink" title="KMP算法"></a>KMP算法</h3><p>字符串匹配算法，时间复杂度    <strong> S(n+m)</strong></p>
 <pre><code>#include &lt;stdio.h&gt;
 #include &lt;string.h&gt;
