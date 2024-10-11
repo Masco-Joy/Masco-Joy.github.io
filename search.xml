@@ -1481,7 +1481,7 @@ inter()
   </entry>
   <entry>
     <title>unlink</title>
-    <url>/2024/09/26/unlink/</url>
+    <url>/2024/08/26/unlink/</url>
     <content><![CDATA[<h1 id="unlink"><a href="#unlink" class="headerlink" title="unlink"></a>unlink</h1><span id="more"></span>
 <h2 id="unlink的定义与行为"><a href="#unlink的定义与行为" class="headerlink" title="unlink的定义与行为"></a>unlink的定义与行为</h2><h3 id="1、定义"><a href="#1、定义" class="headerlink" title="1、定义"></a>1、定义</h3><p>unlink是一个宏定义，其主要利用的代码段是   </p>
 <pre><code>#define unlink(AV, P, BK, FD) &#123;                                            
