@@ -3,13 +3,14 @@
   <entry>
     <title>Data_Structure</title>
     <url>/2024/09/26/Data-Structure/</url>
-    <content><![CDATA[<h1 id="Data-Structure"><a href="#Data-Structure" class="headerlink" title="Data_Structure"></a>Data_Structure</h1><span id="more"></span>
+    <content><![CDATA[<p>Data_Structure</p>
+<span id="more"></span>
 <br>
 
-<h1 id="没有技巧，全是粘贴"><a href="#没有技巧，全是粘贴" class="headerlink" title=" 没有技巧，全是粘贴"></a><strong><em> 没有技巧，全是粘贴</em></strong></h1><h1 id="NO-SKILLS，ALL-PASTING"><a href="#NO-SKILLS，ALL-PASTING" class="headerlink" title="NO SKILLS，ALL PASTING"></a>NO SKILLS，ALL PASTING</h1><p></p>
+<p> <strong><em> 没有技巧，全是粘贴<br> NO SKILLS，ALL PASTING<br></em></strong></p>
 <br>
 
-<h2 id="Link-List"><a href="#Link-List" class="headerlink" title="Link_List"></a>Link_List</h2><br>
+<h2 id="1、Link-List"><a href="#1、Link-List" class="headerlink" title="1、Link_List"></a>1、Link_List</h2><br>
 
 <h2 id="1、单链表-循环单链表"><a href="#1、单链表-循环单链表" class="headerlink" title="1、单链表&amp;&amp;循环单链表"></a>1、单链表&amp;&amp;循环单链表</h2><br>
 
@@ -69,7 +70,7 @@ for (i=0;i&lt;n;i++)		//循环建立数据结点
 &#125;
 </code></pre>
 <p><img src="/images/List/3.png" alt="图片"><br><img src="/images/List/4.png" alt="图片"><br><br></p>
-<h2 id="Stack-Queue"><a href="#Stack-Queue" class="headerlink" title="Stack&amp;&amp;Queue"></a>Stack&amp;&amp;Queue</h2><h3 id="1、Stack"><a href="#1、Stack" class="headerlink" title="1、Stack"></a>1、Stack</h3><br>
+<h2 id="2、Stack-Queue"><a href="#2、Stack-Queue" class="headerlink" title="2、Stack&amp;&amp;Queue"></a>2、Stack&amp;&amp;Queue</h2><h3 id="1、Stack"><a href="#1、Stack" class="headerlink" title="1、Stack"></a>1、Stack</h3><br>
 
 <h3 id="顺序表"><a href="#顺序表" class="headerlink" title="顺序表"></a>顺序表</h3><p>(1)Init</p>
 <pre><code>void InitStack(SqStack *&amp;s)
